@@ -1,0 +1,28 @@
+#include <LiquidCrystal.h>
+
+// Инициализируйте дисплей
+LiquidCrystal lcd(6, 7, 4, 5, 8, 9);
+
+unsigned long startTime = 0; // Время запуска
+
+void setup() {
+  lcd.begin(16, 2); // Установите размер дисплея
+  lcd.setCursor(0, 0); // Установите курсор в начало первой строки
+  lcd.print("Time:"); // Выведите текст "Time:"
+  startTime = millis(); // Запишите время запуска
+}
+
+void loop() {
+  unsigned long currentTime = millis(); // Текущее время
+  unsigned long elapsed = currentTime - startTime; // Время, прошедшее с запуска
+
+  unsigned long minutes = elapsed / 60000; // Минуты
+  unsigned long seconds = (elapsed % 60000) / 1000; // Секунды
+
+  lcd.setCursor(0, 1); // Установите курсор на вторую строку
+  lcd.print("mm:ss"); // Выведите метку
+  lcd.setCursor(0, 1); // Установите курсор на вторую строку
+  lcd.print(String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0')); // Выведите время в формате мм:сс
+
+  delay(1000); // Обновляйте каждую секунду
+}
