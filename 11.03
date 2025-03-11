@@ -1,0 +1,65 @@
+using System;
+using System.Windows;
+using System.Windows.Threading;
+
+namespace ClockApp
+{
+    public partial class MainWindow : Window
+    {
+        private DispatcherTimer timer; // Таймер для обновления времени
+        private double directionX = 1; // Направление движения по оси X
+        private double directionY = 1; // Направление движения по оси Y
+        private double speed = 5;      // Скорость движения метки
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            StartClockTimer(); // Запускаем таймер для обновления времени
+            StartMovementTimer(); // Запускаем таймер для движения метки
+            UpdateTimeLabel(); // Обновляем время сразу при запуске
+        }
+
+        private void StartClockTimer()
+        {
+            timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(1); // Обновление времени каждую секунду
+            timer.Tick += (s, e) => UpdateTimeLabel();
+            timer.Start();
+        }
+
+        private void UpdateTimeLabel()
+        {
+            TimeLabel.Content = DateTime.Now.ToString("HH:mm:ss"); // Формат времени чч:мм:сс
+        }
+
+        private void StartMovementTimer()
+        {
+            DispatcherTimer movementTimer = new DispatcherTimer();
+            movementTimer.Interval = TimeSpan.FromMilliseconds(10); // Обновление позиции каждые 10 мс
+            movementTimer.Tick += MoveLabel;
+            movementTimer.Start();
+        }
+
+        private void MoveLabel(object sender, EventArgs e)
+        {
+            // Получаем текущие координаты метки
+            double currentLeft = Canvas.GetLeft(TimeLabel);
+            double currentTop = Canvas.GetTop(TimeLabel);
+
+            // Вычисляем новые координаты
+            double newLeft = currentLeft + directionX * speed;
+            double newTop = currentTop + directionY * speed;
+
+            // Проверяем границы окна и меняем направление при столкновении
+            if (newLeft <= 0 || newLeft + TimeLabel.ActualWidth >= MainCanvas.ActualWidth)
+                directionX *= -1; // Меняем направление по оси X
+
+            if (newTop <= 0 || newTop + TimeLabel.ActualHeight >= MainCanvas.ActualHeight)
+                directionY *= -1; // Меняем направление по оси Y
+
+            // Устанавливаем новые координаты метки
+            Canvas.SetLeft(TimeLabel, newLeft);
+            Canvas.SetTop(TimeLabel, newTop);
+        }
+    }
+}
