@@ -1,0 +1,67 @@
+private void TerminateProcess(int processId)
+{
+    try
+    {
+        using var process = Process.GetProcessById(processId);
+        process.Kill();
+        process.WaitForExit(); // Ожидание завершения
+    }
+    catch (ArgumentException)
+    {
+        MessageBox.Show("Процесс не найден", "Ошибка", 
+            MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", 
+            MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+}
+
+
+
+
+private async void KillTask_Click(object sender, RoutedEventArgs e)
+{
+    if (ProcessesListView.SelectedItem is Process selectedProcess)
+    {
+        // Асинхронный вариант для предотвращения блокировки UI
+        await Task.Run(() => TerminateProcess(selectedProcess.Id));
+        LoadProcesses(); // Обновляем список после завершения
+    }
+}
+
+
+
+
+// Синхронная версия (может блокировать UI)
+private void KillTask_Click(...)
+{
+    TerminateProcess(selectedProcess.Id);
+    LoadProcesses();
+}
+
+// Асинхронная версия (рекомендуется)
+private async void KillTask_Click(...)
+{
+    await Task.Run(() => TerminateProcess(...));
+    LoadProcesses();
+}
+
+
+
+
+
+<!-- Добавьте в ListView контекстное меню -->
+<ListView.ContextMenu>
+    <ContextMenu>
+        <MenuItem Header="Снять задачу" Click="KillTask_Click"/>
+        <MenuItem Header="Завершить дерево" Click="KillProcessTree_Click"/>
+    </ContextMenu>
+</ListView.ContextMenu>
+
+
+
+
+
+
