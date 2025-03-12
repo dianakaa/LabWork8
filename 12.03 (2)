@@ -1,0 +1,61 @@
+<TabItem Header="Приложения">
+    <ListView x:Name="ApplicationsListView">
+        <ListView.View>
+            <GridView>
+                <GridViewColumn Header="Приложение" 
+                              DisplayMemberBinding="{Binding MainWindowTitle}"/>
+                <GridViewColumn Header="Время запуска" 
+                              DisplayMemberBinding="{Binding StartTime}"/>
+            </GridView>
+        </ListView.View>
+    </ListView>
+</TabItem>
+
+
+private void LoadApplications()
+{
+    var applications = Process.GetProcesses()
+        .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle))
+        .Select(p => new 
+        {
+            p.MainWindowTitle,
+            StartTime = GetProcessStartTimeSafe(p)
+        })
+        .ToList();
+
+    ApplicationsListView.ItemsSource = applications;
+}
+
+private DateTime GetProcessStartTimeSafe(Process process)
+{
+    try 
+    {
+        return process.StartTime;
+    }
+    catch 
+    {
+        return DateTime.MinValue; // Для процессов без доступа
+    }
+}
+
+
+private void LoadProcesses()
+{
+    var processes = Process.GetProcesses();
+    
+    ProcessesListView.ItemsSource = processes;
+    ProcessCountTextBlock.Text = $"Количество процессов: {processes.Length}";
+    
+    LoadApplications(); // Обновляем список приложений
+}
+
+
+
+<Window.Resources>
+    <local:DateTimeConverter x:Key="DateTimeConverter"/>
+</Window.Resources>
+
+<GridViewColumn Header="Время запуска" 
+              DisplayMemberBinding="{Binding StartTime, 
+              Converter={StaticResource DateTimeConverter}}"/>
+
