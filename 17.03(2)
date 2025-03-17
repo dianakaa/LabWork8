@@ -1,0 +1,25 @@
+<Label x:Name="lblSha256Hash" Grid.Row="3" Content="SHA-256 хэш будет здесь"/>
+
+
+
+private static string CalculateSha256(string filePath)
+{
+    using var sha256 = SHA256.Create();
+    using var stream = File.OpenRead(filePath);
+    
+    byte[] hashBytes = sha256.ComputeHash(stream);
+    return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+}
+
+
+
+
+
+private void ComputeButton_Click(object sender, RoutedEventArgs e)
+{
+    if (File.Exists(txtFilePath.Text))
+    {
+        lblHash.Content = CalculateMd5(txtFilePath.Text);
+        lblSha256Hash.Content = CalculateSha256(txtFilePath.Text);
+    }
+}
