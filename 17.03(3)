@@ -1,0 +1,109 @@
+<Window x:Class="HashAnalyzer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Анализатор файлов" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="0">
+            <TextBox x:Name="txtFolderPath" Width="300" Margin="0,0,5,0"/>
+            <Button Content="Обзор" Click="BrowseFolder_Click" Width="60"/>
+            <Button Content="Анализ" Click="Analyze_Click" Margin="10,0" Width="60"/>
+        </StackPanel>
+
+        <DataGrid x:Name="dgFiles" Grid.Row="2" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Имя файла" Binding="{Binding Name}" Width="150"/>
+                <DataGridTextColumn Header="MD5" Binding="{Binding MD5Hash}" Width="250"/>
+                <DataGridTextColumn Header="SHA-256" Binding="{Binding SHA256Hash}" Width="300"/>
+                <DataGridTextColumn Header="Размер (Б)" Binding="{Binding Size}"/>
+                <DataGridTextColumn Header="Изменён" Binding="{Binding ModifiedDate}"/>
+                <DataGridTextColumn Header="Путь" Binding="{Binding FullPath}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>
+
+
+
+
+public class FileInfoModel
+{
+    public string Name { get; set; }
+    public string MD5Hash { get; set; }
+    public string SHA256Hash { get; set; }
+    public long Size { get; set; }
+    public DateTime ModifiedDate { get; set; }
+    public string FullPath { get; set; }
+}
+
+
+
+
+
+
+using System.IO;
+using System.Security.Cryptography;
+using System.Windows;
+using Microsoft.WindowsAPICodePack.Dialogs;
+
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+    }
+
+    private void BrowseFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new CommonOpenFileDialog
+        {
+            IsFolderPicker = true,
+            Title = "Выберите папку"
+        };
+
+        if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+        {
+            txtFolderPath.Text = dialog.FileName;
+        }
+    }
+
+    private async void Analyze_Click(object sender, RoutedEventArgs e)
+    {
+        var files = Directory.EnumerateFiles(txtFolderPath.Text, "*", SearchOption.AllDirectories);
+        var fileData = new List<FileInfoModel>();
+
+        foreach (var file in files)
+        {
+            var fileInfo = new FileInfo(file);
+            var data = new FileInfoModel
+            {
+                Name = fileInfo.Name,
+                FullPath = fileInfo.FullName,
+                Size = fileInfo.Length,
+                ModifiedDate = fileInfo.LastWriteTime
+            };
+
+            await Task.Run(() => 
+            {
+                data.MD5Hash = CalculateHash(file, MD5.Create());
+                data.SHA256Hash = CalculateHash(file, SHA256.Create());
+            });
+
+            fileData.Add(data);
+        }
+
+        dgFiles.ItemsSource = fileData;
+    }
+
+    private string CalculateHash(string filePath, HashAlgorithm algorithm)
+    {
+        using var stream = File.OpenRead(filePath);
+        byte[] hashBytes = algorithm.ComputeHash(stream);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+    }
+}
