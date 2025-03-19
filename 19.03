@@ -1,0 +1,137 @@
+<Grid>
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    
+    <!-- Строка меню -->
+    <Menu Grid.Row="0">
+        <MenuItem Header="Файл"/>
+        <MenuItem Header="Вид"/>
+    </Menu>
+
+    <!-- Поле пути -->
+    <TextBox Grid.Row="1" Text="{Binding CurrentPath}"/>
+
+    <!-- Разделение областей -->
+    <GridSplitter Grid.Row="2" Width="5"/>
+    
+    <Grid Grid.Row="2">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="2*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Дерево папок -->
+        <TreeView Grid.Column="0" ItemsSource="{Binding RootDirectories}">
+            <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type sys:DirectoryInfo}" 
+                                        ItemsSource="{Binding SubDirectories}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{StaticResource FolderIcon}" Width="16"/>
+                        <TextBlock Text="{Binding Name}" Margin="5,0"/>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </TreeView.Resources>
+        </TreeView>
+
+        <!-- Список файлов -->
+        <ListView Grid.Column="2" ItemsSource="{Binding CurrentFiles}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Имя" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="Тип" DisplayMemberBinding="{Binding Extension}"/>
+                    <GridViewColumn Header="Изменен" 
+                                 DisplayMemberBinding="{Binding LastWriteTime}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Grid>
+
+
+
+
+
+<Window.Resources>
+    <!-- Иконки из ресурсов -->
+    <DrawingImage x:Key="FolderIcon">...</DrawingImage>
+    <DrawingImage x:Key="TextFileIcon">...</DrawingImage>
+    <DrawingImage x:Key="ImageFileIcon">...</DrawingImage>
+    <DrawingImage x:Key="DefaultFileIcon">...</DrawingImage>
+
+    <!-- Конвертер для выбора иконки -->
+    <local:FileIconConverter x:Key="IconConverter"/>
+</Window.Resources>
+
+
+
+
+
+public class FileSystemViewModel : INotifyPropertyChanged
+{
+    public ObservableCollection<DirectoryInfo> RootDirectories { get; } = new();
+    
+    public FileSystemViewModel()
+    {
+        LoadRootDirectories();
+    }
+
+    private async void LoadRootDirectories()
+    {
+        await Task.Run(() => 
+        {
+            foreach (var drive in DriveInfo.GetDrives())
+            {
+                RootDirectories.Add(drive.RootDirectory);
+            }
+        });
+    }
+}
+
+
+
+
+
+<DataTemplate DataType="{x:Type sys:FileInfo}">
+    <StackPanel Orientation="Horizontal">
+        <Image Source="{Binding Converter={StaticResource IconConverter}}" Width="16"/>
+        <TextBlock Text="{Binding Name}" Margin="5,0"/>
+    </StackPanel>
+</DataTemplate>
+
+
+
+
+
+
+public class FileIconConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var file = value as FileInfo;
+        return file?.Extension switch
+        {
+            ".txt" => Application.Current.FindResource("TextFileIcon"),
+            ".jpg" or ".png" => Application.Current.FindResource("ImageFileIcon"),
+            _ => Application.Current.FindResource("DefaultFileIcon")
+        };
+    }
+}
+
+
+
+
+
+
+public string CurrentPath
+{
+    get => _currentPath;
+    set => SetField(ref _currentPath, 
+                  value ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+}
+
+
+
