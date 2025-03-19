@@ -1,0 +1,133 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+
+namespace FileManager
+{
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+            LoadDirectories();
+            LoadFiles();
+        }
+
+        private void LoadDirectories()
+        {
+            var root = new DirectoryItem
+            {
+                Name = "C:\\",
+                FullPath = "C:\\",
+                SubDirectories = new ObservableCollection<DirectoryItem>(GetSubDirectories("C:\\"))
+            };
+            FolderTree.ItemsSource = new[] { root };
+        }
+
+        private IEnumerable<DirectoryItem> GetSubDirectories(string path)
+        {
+            try
+            {
+                return Directory.GetDirectories(path)
+                    .Select(dir => new DirectoryItem
+                    {
+                        Name = System.IO.Path.GetFileName(dir),
+                        FullPath = dir,
+                        SubDirectories = new ObservableCollection<DirectoryItem>(GetSubDirectories(dir))
+                    });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return new List<DirectoryItem>();
+            }
+        }
+
+        private void LoadFiles()
+        {
+            FileList.ItemsSource = GetFiles("C:\\");
+        }
+
+        private IEnumerable<FileItem> GetFiles(string path)
+        {
+            try
+            {
+                return Directory.GetFiles(path)
+                    .Select(file => new FileItem
+                    {
+                        Name = System.IO.Path.GetFileName(file),
+                        ModifiedDate = File.GetLastWriteTime(file)
+                    });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return new List<FileItem>();
+            }
+        }
+
+        private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is DirectoryItem selectedDir)
+            {
+                PathTextBox.Text = selectedDir.FullPath;
+                FileList.ItemsSource = GetFiles(selectedDir.FullPath);
+            }
+        }
+
+        private void PathTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            try
+            {
+                FileList.ItemsSource = GetFiles(PathTextBox.Text);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                MessageBox.Show("Доступ к папке запрещен.");
+            }
+            catch (DirectoryNotFoundException)
+            {
+                MessageBox.Show("Папка не найдена.");
+            }
+        }
+    }
+
+    public class DirectoryItem
+    {
+        public string Name { get; set; }
+        public string FullPath { get; set; }
+        public ObservableCollection<DirectoryItem> SubDirectories { get; set; }
+    }
+
+    public class FileItem
+    {
+        public string Name { get; set; }
+        public string Type => System.IO.Path.GetExtension(Name).ToLower();
+        public DateTime ModifiedDate { get; set; }
+
+        public ImageSource Icon
+        {
+            get
+            {
+                switch (Type)
+                {
+                    case ".png":
+                    case ".jpg":
+                    case ".jpeg":
+                    case ".gif":
+                        return new BitmapImage(new Uri("pack://application:,,,/Images/image.png"));
+                    case ".mp3":
+                    case ".wav":
+                        return new BitmapImage(new Uri("pack://application:,,,/Images/audio_file.png"));
+                    case ".txt":
+                    case ".log":
+                        return new BitmapImage(new Uri("pack://application:,,,/Images/text_snippet.png"));
+                    default:
+                        return new BitmapImage(new Uri("pack://application:,,,/Images/insert_drive_file.png")); // Иконка по умолчанию
+                }
+            }
+        }
+    }
+}
