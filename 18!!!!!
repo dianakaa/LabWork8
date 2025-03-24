@@ -1,0 +1,312 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+
+namespace DiskInfoApp
+{
+    public partial class MainWindow : Window
+    {
+        public ObservableCollection<DriveInfoViewModel> Drives { get; set; } = new ObservableCollection<DriveInfoViewModel>();
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = this;
+
+            LoadDriveInfo();
+        }
+
+        private void LoadDriveInfo()
+        {
+            Drives.Clear();
+            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            {
+                Drives.Add(new DriveInfoViewModel(drive));
+            }
+        }
+
+        private void FolderPathTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                string folderPath = FolderPathTextBox.Text;
+                if (Directory.Exists(folderPath))
+                {
+                    UpdateFolderInfo(folderPath);
+                    UpdateTop10Files(folderPath);
+                }
+                else
+                {
+                    MessageBox.Show("Указанная папка не существует.");
+                }
+            }
+        }
+
+        private void UpdateFolderInfo(string folderPath)
+        {
+            long totalFiles = 0;
+            long totalFolders = 0;
+            long totalSize = 0;
+
+            GetDirectoryInfo(folderPath, ref totalFiles, ref totalFolders, ref totalSize);
+
+            TotalFilesTextBlock.Text = totalFiles.ToString();
+            TotalFoldersTextBlock.Text = totalFolders.ToString();
+            TotalSizeTextBlock.Text = FormatBytes(totalSize);
+
+
+            // Calculate occupied space percentage
+            try
+            {
+                DriveInfo drive = new DriveInfo(Path.GetPathRoot(folderPath));
+                double occupiedPercentage = (double)totalSize / drive.TotalSize * 100;
+                OccupiedPercentageTextBlock.Text = $"{occupiedPercentage:F2}%";
+            }
+            catch (Exception ex)
+            {
+                OccupiedPercentageTextBlock.Text = "N/A";
+                MessageBox.Show($"Error calculating occupied percentage: {ex.Message}");
+            }
+        }
+
+        private void GetDirectoryInfo(string path, ref long totalFiles, ref long totalFolders, ref long totalSize)
+        {
+            try
+            {
+                // Process files in the current directory
+                foreach (string file in Directory.GetFiles(path))
+                {
+                    FileInfo fileInfo = new FileInfo(file);
+                    totalFiles++;
+                    totalSize += fileInfo.Length;
+                }
+
+                // Recursively process subdirectories
+                foreach (string subDir in Directory.GetDirectories(path))
+                {
+                    totalFolders++;
+                    GetDirectoryInfo(subDir, ref totalFiles, ref totalFolders, ref totalSize);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Handle permission issues gracefully (e.g., log or display a message)
+            }
+            catch (Exception ex)
+            {
+                // Handle other potential errors (e.g., log or display a message)
+                MessageBox.Show($"Error processing directory: {ex.Message}");
+            }
+        }
+
+        private void UpdateTop10Files(string folderPath)
+        {
+            try
+            {
+                List<FileInfo> allFiles = GetAllFiles(folderPath);
+
+                var top10Files = allFiles.OrderByDescending(f => f.Length).Take(10).Select(f => new FileInfoViewModel(f)).ToList();
+                Top10FilesListView.ItemsSource = top10Files;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting top 10 files: {ex.Message}");
+            }
+        }
+
+        private List<FileInfo> GetAllFiles(string folderPath)
+        {
+            List<FileInfo> fileList = new List<FileInfo>();
+            try
+            {
+                foreach (string file in Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories))
+                {
+                    fileList.Add(new FileInfo(file));
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                //Handle permission issues
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting all files: {ex.Message}");
+            }
+            return fileList;
+        }
+
+        private string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int i;
+            double dblSByte = bytes;
+            for (i = 0; i < suffixes.Length && bytes > 1024; i++, bytes /= 1024)
+            {
+                dblSByte = bytes / 1024.0;
+            }
+
+            return string.Format("{0:0.##} {1}", dblSByte, suffixes[i]);
+        }
+
+    }
+
+    public class DriveInfoViewModel
+    {
+        public string Name { get; set; }
+        public string DriveType { get; set; }
+        public string TotalSize { get; set; }
+        public string FreeSpace { get; set; }
+        public string UsedPercentage { get; set; }
+
+        public DriveInfoViewModel(DriveInfo driveInfo)
+        {
+            Name = driveInfo.Name;
+            DriveType = driveInfo.DriveType.ToString();
+
+            try
+            {
+                TotalSize = FormatBytes(driveInfo.TotalSize);
+                FreeSpace = FormatBytes(driveInfo.AvailableFreeSpace);
+                UsedPercentage = $"{((double)(driveInfo.TotalSize - driveInfo.AvailableFreeSpace) / driveInfo.TotalSize) * 100:F2}%";
+            }
+            catch (Exception)
+            {
+                TotalSize = "N/A";
+                FreeSpace = "N/A";
+                UsedPercentage = "N/A";
+            }
+
+        }
+
+        private string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int i;
+            double dblSByte = bytes;
+            for (i = 0; i < suffixes.Length && bytes > 1024; i++, bytes /= 1024)
+            {
+                dblSByte = bytes / 1024.0;
+            }
+
+            return string.Format("{0:0.##} {1}", dblSByte, suffixes[i]);
+        }
+    }
+
+    public class FileInfoViewModel
+    {
+        public string Name { get; set; }
+        public string Size { get; set; }
+        public string Path { get; set; }
+        public DateTime LastModified { get; set; }
+
+        public FileInfoViewModel(FileInfo fileInfo)
+        {
+            Name = fileInfo.Name;
+            Size = FormatBytes(fileInfo.Length);
+            Path = fileInfo.FullName;
+            LastModified = fileInfo.LastWriteTime;
+        }
+
+        private string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int i;
+            double dblSByte = bytes;
+            for (i = 0; i < suffixes.Length && bytes > 1024; i++, bytes /= 1024)
+            {
+                dblSByte = bytes / 1024.0;
+            }
+
+            return string.Format("{0:0.##} {1}", dblSByte, suffixes[i]);
+        }
+    }
+}
+
+
+
+
+<Window x:Class="DiskInfoApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Disk Info" Height="600" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Panel - Disk Information -->
+        <ListView Grid.Row="0" ItemsSource="{Binding Drives}" Margin="5">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Имя" Width="Auto" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="Тип" Width="Auto" DisplayMemberBinding="{Binding DriveType}"/>
+                    <GridViewColumn Header="Общий размер" Width="Auto" DisplayMemberBinding="{Binding TotalSize}"/>
+                    <GridViewColumn Header="Использовано %" Width="Auto" DisplayMemberBinding="{Binding UsedPercentage}"/>
+                    <GridViewColumn Header="Свободно" Width="Auto" DisplayMemberBinding="{Binding FreeSpace}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Middle Panel - Folder Path Input -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+            <Label Content="Путь к папке:" VerticalAlignment="Center"/>
+            <TextBox x:Name="FolderPathTextBox" Width="300" VerticalAlignment="Center" KeyDown="FolderPathTextBox_KeyDown"/>
+        </StackPanel>
+
+        <!-- Bottom Panel - Folder Information and Top 10 Files -->
+        <TabControl Grid.Row="2" Margin="5">
+            <TabItem Header="Общая информация">
+                <Grid>
+="5">
+                        <Label Content="Количество файлов:" FontWeight="Bold"/>
+                        <TextBlock x:Name="TotalFilesTextBlock" Text="0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+                        <Label Content="Количество папок:" FontWeight="Bold"/>
+                        <TextBlock x:Name="TotalFoldersTextBlock" Text="0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5">
+                        <Label Content="Размер папки:" FontWeight="Bold"/>
+                        <TextBlock x:Name="TotalSizeTextBlock" Text="0 B"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="5">
+                        <Label Content="% занятого места на диске:" FontWeight="Bold"/>
+                        <TextBlock x:Name="OccupiedPercentageTextBlock" Text="0%"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Топ 10 файлов">
+                <ListView x:Name="Top10FilesListView" Margin="5">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Имя файла" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                            <GridViewColumn Header="Размер файла" Width="100" DisplayMemberBinding="{Binding Size}"/>
+                            <GridViewColumn Header="Расположение файла" Width="250" DisplayMemberBinding="{Binding Path}"/>
+                            <GridViewColumn Header="Дата последнего изменения" Width="150" DisplayMemberBinding="{Binding LastModified}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
+
+
+
+
