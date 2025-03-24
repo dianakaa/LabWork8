@@ -1,0 +1,145 @@
+<Window x:Class="DiskInfoApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:DiskInfoApp"
+        Title="Disk Information" Height="450" Width="800">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="7*"/>
+            <RowDefinition Height="3*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Верхняя часть: информация о дисках -->
+        <DataGrid Grid.Row="0" 
+                  AutoGenerateColumns="False"
+                  ItemsSource="{Binding Disks}"
+                  IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Имя" Binding="{Binding Name}"/>
+                <DataGridTextColumn Header="Тип" Binding="{Binding DriveType}"/>
+                <DataGridTextColumn Header="Общий размер" Binding="{Binding TotalSize, Converter={local:BytesToHumanReadableConverter UseDecimalUnits=True}}"/>
+                <DataGridTextColumn Header="Использовано %" Binding="{Binding UsedPercent, StringFormat=F2}"/>
+                <DataGridTextColumn Header="Свободно" Binding="{Binding FreeSpace, Converter={local:BytesToHumanReadableConverter UseDecimalUnits=True}}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Нижняя часть: информация о папке -->
+        <StackPanel Grid.Row="1" Margin="10">
+            <TextBox Text="{Binding CurrentFolder}" Margin="0 0 0 10"/>
+            <!-- Дополнительные элементы для отображения информации о папке -->
+        </StackPanel>
+    </Grid>
+</Window>
+
+
+
+
+
+using System;
+using System.Globalization;
+using System.Windows.Data;
+using System.Windows.Markup;
+
+public class BytesToHumanReadableConverter : MarkupExtension, IValueConverter
+{
+    public bool UseDecimalUnits { get; set; } = true; // Десятичная система по умолчанию
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not long bytes || bytes < 0)
+            return "N/A";
+
+        int baseUnit = UseDecimalUnits ? 1000 : 1024;
+        string[] suffixes = UseDecimalUnits
+            ? new[] { "Б", "КБ", "МБ", "ГБ", "ТБ" }
+            : new[] { "Б", "КиБ", "МиБ", "ГиБ", "ТиБ" };
+
+        double size = bytes;
+        int suffixIndex = 0;
+
+        while (size >= baseUnit && suffixIndex < suffixes.Length - 1)
+        {
+            size /= baseUnit;
+            suffixIndex++;
+        }
+
+        return $"{size:N2} {suffixes[suffixIndex]}";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+
+    private static BytesToHumanReadableConverter _instance;
+
+    public override object ProvideValue(IServiceProvider serviceProvider)
+    {
+        return _instance ??= new BytesToHumanReadableConverter();
+    }
+}
+
+
+
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+
+public class MainViewModel : INotifyPropertyChanged
+{
+    public ObservableCollection<DiskInfo> Disks { get; } = new();
+    public string CurrentFolder { get; set; } = "Выберите папку...";
+
+    public MainViewModel()
+    {
+        LoadDisks();
+    }
+
+    private void LoadDisks()
+    {
+        foreach (var drive in DriveInfo.GetDrives().Where(d => d.IsReady))
+        {
+            Disks.Add(new DiskInfo
+            {
+                Name = drive.Name,
+                DriveType = drive.DriveType.ToString(),
+                TotalSize = drive.TotalSize,
+                FreeSpace = drive.AvailableFreeSpace, // Используем AvailableFreeSpace для учёта квот
+                UsedPercent = 100 - (drive.AvailableFreeSpace * 100.0 / drive.TotalSize)
+            });
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+}
+
+public class DiskInfo
+{
+    public string Name { get; set; }
+    public string DriveType { get; set; }
+    public long TotalSize { get; set; }
+    public long FreeSpace { get; set; }
+    public double UsedPercent { get; set; }
+}
+
+
+
+
+
+<Application x:Class="DiskInfoApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <local:BytesToHumanReadableConverter x:Key="BytesConverter"/>
+    </Application.Resources>
+</Application>
+
+
+
+
+
+
