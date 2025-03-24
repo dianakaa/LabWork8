@@ -1,0 +1,32 @@
+public class BytesToHumanReadableConverter : MarkupExtension, IValueConverter
+{
+    // Сохраняем единственный экземпляр для оптимизации
+    private static BytesToHumanReadableConverter _instance;
+
+    public override object ProvideValue(IServiceProvider serviceProvider)
+    {
+        return _instance ??= new BytesToHumanReadableConverter();
+    }
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        long bytes = (long)value;
+        string[] suffixes = { "Б", "КБ", "МБ", "ГБ", "ТБ" };
+        
+        int suffixIndex = 0;
+        double size = bytes;
+        
+        while (size >= 1024 && suffixIndex < suffixes.Length - 1)
+        {
+            size /= 1024;
+            suffixIndex++;
+        }
+        
+        return $"{size:0.##} {suffixes[suffixIndex]}";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
