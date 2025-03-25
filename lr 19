@@ -1,0 +1,50 @@
+using Microsoft.Win32;
+using System.IO;
+using System.IO.Compression;
+
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+    }
+
+    private void CreateFromFile_Click(object sender, RoutedEventArgs e)
+    {
+        var openDialog = new OpenFileDialog();
+        if (openDialog.ShowDialog() == true)
+        {
+            var saveDialog = new SaveFileDialog()
+            {
+                Filter = "ZIP files (*.zip)|*.zip",
+                DefaultExt = ".zip"
+            };
+            
+            if (saveDialog.ShowDialog() == true)
+            {
+                using (var archive = ZipFile.Open(saveDialog.FileName, ZipArchiveMode.Create))
+                {
+                    archive.CreateEntryFromFile(openDialog.FileName, Path.GetFileName(openDialog.FileName));
+                }
+            }
+        }
+    }
+
+    private void CreateFromFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
+        if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            var saveDialog = new SaveFileDialog()
+            {
+                Filter = "ZIP files (*.zip)|*.zip",
+                DefaultExt = ".zip"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                ZipFile.CreateFromDirectory(folderDialog.SelectedPath, saveDialog.FileName);
+            }
+        }
+    }
+}
