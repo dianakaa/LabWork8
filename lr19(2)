@@ -1,0 +1,75 @@
+using Microsoft.Win32;
+using System.IO;
+using System.IO.Compression;
+using System.Windows;
+
+namespace ZipApp
+{
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void CreateFromFile_Click(object sender, RoutedEventArgs e)
+        {
+            var openDialog = new OpenFileDialog();
+            if (openDialog.ShowDialog() == true)
+            {
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "ZIP архивы (*.zip)|*.zip",
+                    DefaultExt = ".zip"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    try
+                    {
+                        using (var archive = ZipFile.Open(saveDialog.FileName, ZipArchiveMode.Create))
+                        {
+                            archive.CreateEntryFromFile(openDialog.FileName, Path.GetFileName(openDialog.FileName));
+                        }
+                        MessageBox.Show("Архив успешно создан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private void CreateFromFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = new CommonOpenFileDialog
+            {
+                IsFolderPicker = true,
+                Title = "Выберите папку для архивации"
+            };
+
+            if (folderDialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "ZIP архивы (*.zip)|*.zip",
+                    DefaultExt = ".zip"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    try
+                    {
+                        ZipFile.CreateFromDirectory(folderDialog.FileName, saveDialog.FileName);
+                        MessageBox.Show("Архив папки создан успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+    }
+}
