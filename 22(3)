@@ -1,0 +1,189 @@
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace PasswordManager
+{
+    public partial class MainWindow : Window
+    {
+        private const string PasswordFile = "passwords.txt";
+        private const string EncryptionKey = "YourSecretEncryptionKey"; // Change this! VERY IMPORTANT
+
+        public ObservableCollection<PasswordEntry> PasswordEntries { get; set; } = new ObservableCollection<PasswordEntry>();
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = this;
+
+            LoadPasswords();
+        }
+
+        private void LoadPasswords()
+        {
+            PasswordEntries.Clear();
+            try
+            {
+                if (File.Exists(PasswordFile))
+                {
+                    foreach (string line in File.ReadLines(PasswordFile))
+                    {
+                        string[] parts = line.Split(';');
+                        if (parts.Length == 3)
+                        {
+                            string site = parts[0];
+                            string login = parts[1];
+                            string encryptedPassword = parts[2];
+                            string password = DecryptString(encryptedPassword, EncryptionKey);
+                            PasswordEntries.Add(new PasswordEntry { Site = site, Login = login, Password = password });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading passwords: {ex.Message}");
+            }
+        }
+
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            string site = SiteTextBox.Text;
+            string login = LoginTextBox.Text;
+            string password = PasswordTextBox.Text;
+
+            if (string.IsNullOrEmpty(site) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password))
+            {
+                MessageBox.Show("Please fill in all fields.");
+                return;
+            }
+
+            string encryptedPassword = EncryptString(password, EncryptionKey);
+
+            try
+            {
+                using (StreamWriter sw = File.AppendText(PasswordFile))
+                {
+                    sw.WriteLine($"{site};{login};{encryptedPassword}");
+                }
+
+                PasswordEntries.Add(new PasswordEntry { Site = site, Login = login, Password = password });
+
+                SiteTextBox.Clear();
+                LoginTextBox.Clear();
+                PasswordTextBox.Clear();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error adding password: {ex.Message}");
+            }
+        }
+
+        private void GeneratePasswordButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(PasswordLengthTextBox.Text, out int length))
+            {
+                if (length > 0)
+                {
+                    PasswordTextBox.Text = GeneratePassword(length);
+                }
+                else
+                {
+                    MessageBox.Show("Password length must be greater than 0.");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid password length.");
+            }
+        }
+
+        private string GeneratePassword(int length)
+        {
+            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            StringBuilder password = new StringBuilder();
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            {
+                byte[] bytes = new byte[length];
+                rng.GetBytes(bytes);
+                for (int i = 0; i < length; i++)
+                {
+                    password.Append(validChars[bytes[i] % validChars.Length]);
+                }
+            }
+            return password.ToString();
+        }
+
+        private static string EncryptString(string plainText, string key)
+        {
+            byte[] iv = new byte[16];
+            byte[] array;
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+                aesAlg.IV = iv;
+
+                ICryptoTransform encryptor = aesAlg.(string cipherText, string key)
+        {
+            byte[] iv = new byte[16];
+            byte[] buffer = Convert.FromBase64String(cipherText);
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+                aesAlg.IV = iv;
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msDecrypt = new MemoryStream(buffer))
+                {
+                    using (CryptoStream    public class PasswordEntry
+    {
+        public string Site { get; set; }
+        public string Login { get; set; }
+        public string Password { get; set; }
+    }
+}
+
+
+<Window x:Class="PasswordManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Password Manager" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            
+        Label Content="Site/Application:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+            
+        TextBox x:Name="SiteTextBox" HorizontalAlignment="Left" Margin="130,13,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="200"/>
+            
+        Label Content="Login:" HorizontalAlignment="Left" Margin="10,40,0,0" VerticalAlignment="Top"/>
+            
+        TextBox x:Name="LoginTextBox" HorizontalAlignment="Left" Margin="130,43,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="200"/>
+            
+        Label Content="Password:" HorizontalAlignment="Left" Margin="10,70,0,0" VerticalAlignment="Top"/>
+            
+        TextBox x:Name="PasswordTextBox" HorizontalAlignment="Left" Margin="130,73,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="200"/>
+            
+        Button x:Name="AddButton" Content="Add" HorizontalAlignment="Left" Margin="130,100,0,0" VerticalAlignment="Top" Width="75" Click="AddButton_Click"/>
+            
+        Label Content="Password Length:" HorizontalAlignment="Left" Margin="350,70,0,0" VerticalAlignment="Top"/>
+            
+        TextBox x:Name="PasswordLengthTextBox" HorizontalAlignment="Left" Margin="460,73,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="50"/>
+            
+        Button x:Name="GeneratePasswordButton" Content="Generate Password" HorizontalAlignment="Left" Margin="520,70,0,0" VerticalAlignment="Top" Width="120" Click="GeneratePasswordButton_Click"/>
+            
+        ListView x:Name="PasswordsListView" ItemsSource="{Binding PasswordEntries}" Margin="10,140,10,10">
+            
+                
+                
+                
+            
+        
+    
+</Window>
