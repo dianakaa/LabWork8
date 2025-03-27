@@ -1,0 +1,139 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace PasswordManager
+{
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+            LoadCredentials();
+        }
+
+        // Класс для хранения данных
+        public class UserCredentials
+        {
+            public string Site { get; set; }
+            public string Login { get; set; }
+            public string Password { get; set; }
+        }
+
+        // Чтение данных из файла
+        private List<UserCredentials> ReadCredentials()
+        {
+            var credentials = new List<UserCredentials>();
+            if (File.Exists("passwords.txt"))
+            {
+                foreach (var line in File.ReadAllLines("passwords.txt"))
+                {
+                    var parts = line.Split(';');
+                    if (parts.Length == 3)
+                    {
+                        credentials.Add(new UserCredentials
+                        {
+                            Site = parts[0],
+                            Login = parts[1],
+                            Password = Decrypt(parts[2]) // Дешифруем пароль
+                        });
+                    }
+                }
+            }
+            return credentials;
+        }
+
+        // Загрузка данных в ListView
+        private void LoadCredentials()
+        {
+            lvCredentials.ItemsSource = ReadCredentials();
+        }
+
+        // Добавление данных
+        private void OnAddButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtSite.Text) || string.IsNullOrWhiteSpace(txtLogin.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
+            {
+                txtStatus.Text = "Заполните все поля!";
+                return;
+            }
+
+            var encryptedPassword = Encrypt(txtPassword.Text); // Шифруем пароль
+            var newCredential = $"{txtSite.Text};{txtLogin.Text};{encryptedPassword}";
+            File.AppendAllText("passwords.txt", newCredential + Environment.NewLine);
+
+            // Очистка полей и обновление ListView
+            txtSite.Text = string.Empty;
+            txtLogin.Text = string.Empty;
+            txtPassword.Text = string.Empty;
+            txtStatus.Text = "Данные успешно добавлены!";
+            LoadCredentials();
+        }
+
+        // Генерация пароля
+        private void OnGeneratePasswordClick(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(txtPasswordLength.Text, out int length) && length > 0)
+            {
+                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                var random = new Random();
+                var password = new string(Enumerable.Repeat(chars, length)
+                    .Select(s => s[random.Next(s.Length)]).ToArray());
+                txtPassword.Text = password;
+                txtStatus.Text = "Пароль сгенерирован!";
+            }
+            else
+            {
+                txtStatus.Text = "Некорректная длина пароля!";
+            }
+        }
+
+        // Шифрование данных
+        private string Encrypt(string plainText)
+        {
+            using (var aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes("16-byte-key-1234"); // 16-байтовый ключ
+                aes.IV = Encoding.UTF8.GetBytes("16-byte-iv-5678");  // 16-байтовый вектор
+                var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+                using (var ms = new MemoryStream())
+                {
+                    using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (var sw = new StreamWriter(cs))
+                        {
+                            sw.Write(plainText);
+                        }
+                        return Convert.ToBase64String(ms.ToArray());
+                    }
+                }
+            }
+        }
+
+        // Дешифрование данных
+        private string Decrypt(string cipherText)
+        {
+            using (var aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes("16-byte-key-1234"); // 16-байтовый ключ
+                aes.IV = Encoding.UTF8.GetBytes("16-byte-iv-5678");  // 16-байтовый вектор
+                var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+                using (var ms = new MemoryStream(Convert.FromBase64String(cipherText)))
+                {
+                    using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (var sr = new StreamReader(cs))
+                        {
+                            return sr.ReadToEnd();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
