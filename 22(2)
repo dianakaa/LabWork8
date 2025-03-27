@@ -1,0 +1,39 @@
+public static string Decrypt(string cipherText)
+{
+    if (string.IsNullOrWhiteSpace(cipherText))
+    {
+        throw new ArgumentException("Зашифрованный текст не может быть пустым или null.");
+    }
+
+    try
+    {
+        // Проверяем, является ли строка валидной Base64
+        byte[] buffer = Convert.FromBase64String(cipherText);
+
+        using (Aes aes = Aes.Create())
+        {
+            aes.Key = Key;
+            aes.IV = IV;
+
+            ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+            using (MemoryStream ms = new MemoryStream(buffer))
+            using (CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+            using (StreamReader sr = new StreamReader(cs))
+            {
+                return sr.ReadToEnd();
+            }
+        }
+    }
+    catch (FormatException)
+    {
+        throw new ArgumentException("Зашифрованный текст не является корректной Base64 строкой.");
+    }
+    catch (CryptographicException ex)
+    {
+        throw new CryptographicException("Ошибка при расшифровке. Проверьте ключ и IV.", ex);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception("Произошла ошибка при расшифровке.", ex);
+    }
+}
