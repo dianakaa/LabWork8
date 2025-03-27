@@ -1,0 +1,203 @@
+<Window x:Class="PasswordManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Password Manager" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Отображение данных -->
+        <ListView ItemsSource="{Binding Entries}" Grid.Row="0">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Сайт/Приложение" DisplayMemberBinding="{Binding Site}"/>
+                    <GridViewColumn Header="Логин" DisplayMemberBinding="{Binding Login}"/>
+                    <GridViewColumn Header="Пароль" DisplayMemberBinding="{Binding DecryptedPassword}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Форма добавления записи -->
+        <StackPanel Grid.Row="1" Margin="10">
+            <TextBox x:Name="txtSite" PlaceholderText="Сайт/Приложение" Margin="0,0,0,5"/>
+            <TextBox x:Name="txtLogin" PlaceholderText="Логин" Margin="0,0,0,5"/>
+            <TextBox x:Name="txtPassword" PlaceholderText="Пароль" Margin="0,0,0,5"/>
+            <TextBox x:Name="txtPasswordLength" PlaceholderText="Длина пароля" Margin="0,0,0,5"/>
+            <Button Content="Сгенерировать пароль" Click="GeneratePassword_Click" Margin="0,0,0,5"/>
+            <Button Content="Добавить" Click="AddButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
+
+
+
+
+
+
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Windows;
+
+namespace PasswordManager
+{
+    public partial class MainWindow : Window
+    {
+        public ObservableCollection<PasswordEntry> Entries { get; set; } = new ObservableCollection<PasswordEntry>();
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = this;
+            LoadEntries();
+        }
+
+        private void LoadEntries()
+        {
+            if (File.Exists("passwords.txt"))
+            {
+                foreach (var line in File.ReadAllLines("passwords.txt"))
+                {
+                    var parts = line.Split(';');
+                    Entries.Add(new PasswordEntry
+                    {
+                        Site = parts[0],
+                        Login = parts[1],
+                        EncryptedPassword = parts[2]
+                    });
+                }
+            }
+        }
+
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ValidateInput(txtSite.Text, txtLogin.Text, txtPassword.Text))
+            {
+                var entry = new PasswordEntry
+                {
+                    Site = txtSite.Text,
+                    Login = txtLogin.Text,
+                    EncryptedPassword = CryptoHelper.Encrypt(txtPassword.Text)
+                };
+
+                File.AppendAllText("passwords.txt", $"{entry.Site};{entry.Login};{entry.EncryptedPassword}{Environment.NewLine}");
+                Entries.Add(entry);
+
+                txtSite.Clear();
+                txtLogin.Clear();
+                txtPassword.Clear();
+            }
+            else
+            {
+                MessageBox.Show("Пожалуйста, заполните все поля корректно.");
+            }
+        }
+
+        private void GeneratePassword_Click(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(txtPasswordLength.Text, out int length) && length > 0)
+            {
+                txtPassword.Text = PasswordGenerator.Generate(length);
+            }
+            else
+            {
+                MessageBox.Show("Введите корректную длину пароля.");
+            }
+        }
+
+        private bool ValidateInput(string site, string login, string password)
+        {
+            return !string.IsNullOrWhiteSpace(site)
+                   && !string.IsNullOrWhiteSpace(login)
+                   && !string.IsNullOrWhiteSpace(password)
+                   && !site.Contains(';')
+                   && !login.Contains(';');
+        }
+
+        // Модель данных
+        public class PasswordEntry : INotifyPropertyChanged
+        {
+            private string _encryptedPassword;
+
+            public string Site { get; set; }
+            public string Login { get; set; }
+
+            public string EncryptedPassword
+            {
+                get => _encryptedPassword;
+                set
+                {
+                    _encryptedPassword = value;
+                    OnPropertyChanged(nameof(DecryptedPassword));
+                }
+            }
+
+            public string DecryptedPassword => CryptoHelper.Decrypt(EncryptedPassword);
+
+            public event PropertyChangedEventHandler PropertyChanged;
+            protected virtual void OnPropertyChanged(string propertyName)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        // Утилита для шифрования и дешифрования
+        public static class CryptoHelper
+        {
+            private static readonly byte[] Key = Encoding.UTF8.GetBytes("MySuperSecretKey123"); // 32 символа для AES-256
+            private static readonly byte[] IV = Encoding.UTF8.GetBytes("InitializationVect");  // 16 символов
+
+            public static string Encrypt(string plainText)
+            {
+                using (Aes aes = Aes.Create())
+                {
+                    aes.Key = Key;
+                    aes.IV = IV;
+
+                    ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+                    using (MemoryStream ms = new MemoryStream())
+                    using (CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter sw = new StreamWriter(cs))
+                            sw.Write(plainText);
+                        return Convert.ToBase64String(ms.ToArray());
+                    }
+                }
+            }
+
+            public static string Decrypt(string cipherText)
+            {
+                using (Aes aes = Aes.Create())
+                {
+                    aes.Key = Key;
+                    aes.IV = IV;
+
+                    ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+                    using (MemoryStream ms = new MemoryStream(Convert.FromBase64String(cipherText)))
+                    using (CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                    using (StreamReader sr = new StreamReader(cs))
+                        return sr.ReadToEnd();
+                }
+            }
+        }
+
+        // Генерация пароля
+        public static class PasswordGenerator
+        {
+            private static readonly Random Random = new Random();
+            private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            public static string Generate(int length)
+            {
+                return new string(Enumerable.Repeat(Chars, length)
+                    .Select(s => s[Random.Next(s.Length)]).ToArray());
+            }
+        }
+    }
+}
+
