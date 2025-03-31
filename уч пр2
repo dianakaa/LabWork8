@@ -1,0 +1,93 @@
+import math
+
+x = float(input("Введите x: "))
+
+if x < -10:
+    y = x ** 3  # Предположение: T*x → x³
+elif -10 <= x < -5:
+    y = x ** 2  # Предположение: x* → x²
+elif -5 <= x < 10:
+    y = math.exp(abs(x))  # e^|x|
+else:
+    y = 1 / math.sin(math.sqrt(x))  # 1/sin(√x)
+
+print(f"y(x) = {round(y, 3)}")
+
+
+
+
+a, b, c = map(float, input("Введите три числа через пробел: ").split())
+
+middle = (
+    b if ((a <= b <= c) or (c <= b <= a)) else
+    a if ((b <= a <= c) or (c <= a <= b)) else
+    c
+)
+
+print(f"Среднее число: {middle}")
+
+
+
+
+
+year = int(input("Введите год: "))
+month = int(input("Введите номер месяца (1-12): "))
+
+is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+days = (
+    29 if is_leap else 28 if month == 2 else
+    30 if month in [4, 6, 9, 11] else 31
+)
+
+print(f"В месяце {days} дней")
+
+
+
+
+
+a, b, c = map(float, input("Введите три стороны через пробел: ").split())
+
+if (a + b > c) and (a + c > b) and (b + c > a):
+    print("Треугольник существует")
+    if a == b == c:
+        print("Тип: равносторонний")
+    elif a == b or b == c or a == c:
+        print("Тип: равнобедренный")
+    else:
+        sides = sorted([a, b, c])
+        if abs(sides[0]**2 + sides[1]**2 - sides[2]**2) < 1e-6:
+            print("Тип: прямоугольный")
+        else:
+            print("Тип: обычный")
+else:
+    print("Треугольник не существует")
+
+
+
+
+
+a = int(input("Введите первое число: "))
+b = int(input("Введите второе число: "))
+op = input("Введите операцию (и/или/исключающее или/сдвиг влево/сдвиг вправо): ")
+
+if op == 'и':
+    res = a & b
+elif op == 'или':
+    res = a | b
+elif op == 'исключающее или':
+    res = a ^ b
+elif op == 'сдвиг влево':
+    res = a << b
+elif op == 'сдвиг вправо':
+    res = a >> b
+else:
+    print("Неверная операция!")
+    exit()
+
+def to_bin(x):
+    return bin(x)[2:]
+
+print(
+    f"{a} ({to_bin(a)}) {op} {b} ({to_bin(b)}) "
+    f"= {res} ({to_bin(res)})"
+)
