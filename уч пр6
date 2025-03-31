@@ -1,0 +1,73 @@
+try:
+    a = float(input("Введите число a: "))
+    b = float(input("Введите число b: "))
+    result = a / b
+    print(f"Результат деления: {result}")
+except ZeroDivisionError:
+    print("Ошибка: Деление на ноль невозможно!")
+
+
+
+
+while True:
+    try:
+        a = float(input("Введите число a: "))
+        b = float(input("Введите число b: "))
+        if b == 0:
+            print("Ошибка: Число b не может быть равно 0. Повторите ввод.")
+            continue
+        result = a / b
+        break
+    except ValueError:
+        print("Ошибка: Введены некорректные данные. Повторите ввод.")
+finally:
+    print(f"Результат деления: {result}")
+
+
+
+
+
+try:
+    x = float(input("Введите число x: "))
+    y = float(input("Введите число y: "))
+    z = float(input("Введите число z: "))
+
+    denominator = x - y + z
+    if denominator == 0:
+        raise ZeroDivisionError("Ошибка: Знаменатель равен нулю.")
+
+    expression = (x * y + z) / denominator
+    if expression < 0:
+        raise ValueError("Ошибка: Под корнем отрицательное число.")
+
+    result = expression ** 0.5
+    print(f"Результат: {result}")
+
+except ValueError as ve:
+    print(ve)
+except ZeroDivisionError as zde:
+    print(zde)
+
+
+
+
+try:
+    x = float(input("Введите число x: "))
+    y = float(input("Введите число y: "))
+    z = float(input("Введите число z: "))
+
+    denominator = x - y + z
+    if denominator == 0:
+        raise ZeroDivisionError("Ошибка: Знаменатель равен нулю.")
+
+    expression = (x * y + z) / denominator
+    if expression < 0:
+        raise ValueError("Ошибка: Под корнем отрицательное число.")
+
+    result = expression ** 0.5
+    print(f"Результат: {result}")
+
+except ValueError as ve:
+    print(ve)
+except ZeroDivisionError as zde:
+    print(zde)
