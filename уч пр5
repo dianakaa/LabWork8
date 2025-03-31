@@ -1,0 +1,102 @@
+string = input("Введите строку: ")
+
+# Вывод строки 5 раз
+print((string + "\n") * 5)
+
+# Длина строки и символы с индексами
+print(f"Длина строки: {len(string)}")
+for idx, char in enumerate(string):
+    print(f"Индекс {idx}: {char}")
+
+# Каждый второй символ с позицией (не индексом)
+for pos in range(1, len(string) + 1, 2):
+    print(f"Позиция {pos}: {string[pos - 1]}")
+
+
+
+
+
+
+string = input("Введите строку: ")
+start = int(input("Введите начальную позицию: "))
+end = int(input("Введите конечную позицию: "))
+
+# Вывод подстроки
+print(string[start - 1:end])
+
+
+
+
+string = input("Введите строку: ")
+
+# Замена первого и последнего символа
+if len(string) > 1:
+    string = "#" + string[1:-1] + "#"
+else:
+    string = "#"
+
+print("Результат:", string)
+
+
+
+string = input("Введите строку: ")
+
+if string.isdigit():
+    print("Строка состоит только из цифр.")
+elif string.isalpha():
+    if string.islower():
+        print("Строка состоит только из строчных букв.")
+    elif string.isupper():
+        print("Строка состоит только из прописных букв.")
+    else:
+        print("Строка состоит только из букв (строчных и прописных).")
+elif string.isalnum():
+    print("Строка состоит только из цифр и букв.")
+else:
+    print("Строка содержит другие символы.")
+
+
+
+string = input("Введите строку: ")
+
+# Разделение по пробелам
+words = string.split()
+
+# Объединение через запятую
+new_string = ",".join(words)
+print("Результат:", new_string)
+
+
+
+substring = input("Введите первую строку (подстроку): ")
+string = input("Введите вторую строку: ")
+
+# Поиск всех вхождений
+count = string.count(substring)
+positions = [i + 1 for i in range(len(string)) if string.startswith(substring, i)]
+
+print(f"Подстрока встречается {count} раз(а).")
+print("Позиции:", positions)
+
+
+
+word = input("Введите слово: ")
+
+# Учет регистра и удаление пробелов
+word = word.lower().replace(" ", "")
+
+if word == word[::-1]:
+    print("Это палиндром!")
+else:
+    print("Это не палиндром.")
+
+
+
+string = input("Введите строку: ")
+
+# Замена двойных пробелов на одинарные
+while "  " in string:
+    string = string.replace("  ", " ")
+
+print("Результат:", string)
+
