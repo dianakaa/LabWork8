@@ -1,0 +1,94 @@
+import random
+import math
+
+num = random.randint(1, 1000)
+print(f"Случайное число: {num}")
+
+is_prime = num > 1  # 1 не считается простым
+for i in range(2, int(math.sqrt(num)) + 1):
+    if num % i == 0:
+        is_prime = False
+        break
+
+print("Простое" if is_prime else "Не простое")
+
+
+
+
+import random
+
+secret = random.randint(1, 10)
+
+while True:
+    guess = int(input("Угадайте число от 1 до 10: "))
+    
+    if guess == secret:
+        print("Молодец! Угадал!")
+        break
+    elif guess < secret:
+        print("Загаданное число БОЛЬШЕ")
+    else:
+        print("Загаданное число МЕНЬШЕ")
+
+
+
+
+
+print("Цельсий | Фаренгейт")
+print("-------------------")
+for celsius in range(100, -1, -10):
+    fahrenheit = celsius * 1.8 + 32
+    print(f"{celsius:>6}°C | {fahrenheit:>8.1f}°F")
+
+
+
+
+# Ввод суммы покупки
+while True:
+    price = float(input("Введите сумму покупки: "))
+    if price > 0:
+        break
+    print("Сумма должна быть больше нуля!")
+
+# Ввод внесенной суммы
+while True:
+    cash = float(input(f"Введите сумму (не менее {price:.2f} руб.): "))
+    
+    if cash < price:
+        shortage = price - cash
+        print(f"Не хватает {shortage:.2f} руб.")
+    else:
+        break
+
+# Расчет сдачи
+if cash > price:
+    change = cash - price
+    print(f"Возьмите сдачу: {change:.2f} руб.")
+else:
+    print("Спасибо!")
+
+
+
+
+
+
+n = int(input("Введите N: "))
+a = float(input("Введите a: "))
+b = float(input("Введите b: "))
+x1 = float(input("Введите x1: "))
+x2 = float(input("Введите x2: "))
+
+# Определение направления вычислений
+step = (x2 - x1) / (n - 1) if x1 <= x2 else (x1 - x2) / (n - 1)
+
+# Генерация значений x
+current_x = x1
+for i in range(n):
+    # Вычисление y
+    y = a * current_x + b
+    
+    # Форматирование вывода
+    print(f"y({current_x:.3f}) = {a}*{current_x:.3f}+{b} = {round(y, 3):.3f}")
+    
+    # Обновление x
+    current_x += step if x1 <= x2 else -step
