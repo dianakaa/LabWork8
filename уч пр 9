@@ -1,0 +1,143 @@
+## Реализация классов и методов
+
+# 5.1 Класс Автор
+class Author:
+    """
+    Класс для представления автора.
+    
+    Атрибуты:
+        full_name (str): ФИО автора
+        country (str): Страна автора
+    """
+    
+    def __init__(self, full_name: str, country: str):
+        """
+        Инициализация объекта Автор.
+        
+        :param full_name: ФИО автора
+        :param country: Страна автора
+        """
+        self.full_name = full_name
+        self.country = country
+    
+    def display_info(self) -> None:
+        """
+        Выводит информацию об авторе на экран.
+        """
+        print(f"Автор: {self.full_name}, Страна: {self.country}")
+
+# 5.2 Класс Книга
+class Book:
+    """
+    Класс для представления книги.
+    
+    Атрибуты:
+        __content (list): Список произведений в книге
+        title (str): Название книги
+    """
+    
+    def __init__(self, title: str):
+        """
+        Инициализация объекта Книга.
+        
+        :param title: Название книги
+        """
+        self.__content = []
+        self.title = title
+        print(f"Книга '{self.title}' создана")
+    
+    def __del__(self):
+        """
+        Деструктор объекта Книга.
+        """
+        print(f"Книга '{self.title}' удалена")
+    
+    # 5.3 Методы для работы с содержанием книги
+    def add_work(self, work_title: str) -> None:
+        """
+        Добавляет произведение в содержание книги.
+        
+        :param work_title: Название произведения
+        """
+        self.__content.append(work_title)
+    
+    def get_work_count(self) -> int:
+        """
+        Возвращает количество произведений в книге.
+        
+        :return: Количество произведений
+        """
+        return len(self.__content)
+    
+    # 5.4 Метод вывода информации о книге
+    def display_info(self) -> None:
+        """
+        Выводит информацию о книге на экран.
+        """
+        print(f"Книга: {self.title}")
+        print("Содержание:")
+        for i, work in enumerate(self.__content, 1):
+            print(f"{i}) {work}")
+
+# 5.5 Класс КнигаАвтора
+class AuthorBook(Author, Book):
+    """
+    Класс для представления книги автора.
+    
+    Наследует:
+        Author: Информация об авторе
+        Book: Информация о книге
+    """
+    
+    def __init__(self, full_name: str, country: str, title: str):
+        """
+        Инициализация объекта КнигаАвтора.
+        
+        :param full_name: ФИО автора
+        :param country: Страна автора
+        :param title: Название книги
+        """
+        Author.__init__(self, full_name, country)
+        Book.__init__(self, title)
+    
+    def display_full_info(self) -> None:
+        """
+        Выводит полную информацию о книге и авторе.
+        """
+        self.display_info()  # Вывод информации о книге
+        print(f"Автор: {self.full_name}")
+
+## Основная программа
+if __name__ == "__main__":
+    # 5.1 Создание списка авторов
+    authors = []
+    n = int(input("Введите количество авторов: "))
+    
+    for i in range(n):
+        print(f"\nАвтор {i+1}:")
+        full_name = input("ФИО автора: ")
+        country = input("Страна автора: ")
+        authors.append(Author(full_name, country))
+    
+    # Вывод всех авторов
+    print("\nСписок всех авторов:")
+    for author in authors:
+        author.display_info()
+    
+    # Вывод русских авторов
+    print("\nСписок русских авторов:")
+    for author in authors:
+        if author.country.lower() == "россия":
+            author.display_info()
+    
+    # 5.2-5.5 Тестирование классов Книга и КнигаАвтора
+    book1 = Book("Python Programming")
+    book1.add_work("Введение в Python")
+    book1.add_work("Основы ООП")
+    book1.display_info()
+    print(f"Количество произведений: {book1.get_work_count()}")
+    
+    author_book = AuthorBook("Иван Иванов", "Россия", "Программирование на Python")
+    author_book.add_work("Введение в Python")
+    author_book.add_work("Работа с классами")
+    author_book.display_full_info()
