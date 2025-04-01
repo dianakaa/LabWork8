@@ -1,0 +1,77 @@
+# 5.1 Функция возведения в степень
+def power(a: int|float = 2, x: int|float = 1) -> int|float:
+    """
+    Возводит число a в степень x.
+    
+    :param a: Основание степени (по умолчанию 2)
+    :param x: Показатель степени (по умолчанию 1)
+    :return: Результат возведения в степень
+    """
+    return a ** x
+
+# 5.2 Рекурсивный факториал
+def factorial(n: int) -> int:
+    """
+    Вычисляет факториал числа рекурсивным способом.
+    
+    :param n: Число для вычисления факториала
+    :return: Факториал числа или -1 при ошибке
+    """
+    if not isinstance(n, int) or n < 0:
+        return -1
+    return 1 if n == 0 else n * factorial(n-1) if n > 0 else -1
+
+# 5.3 Функция статистики
+def stats(*args: int|float) -> None:
+    """
+    Выводит статистику по переданным числам.
+    
+    :param args: Произвольное количество чисел
+    """
+    if not args:
+        print("Нет чисел для анализа")
+        return
+    
+    print(f"Сумма: {sum(args)}")
+    print(f"Среднее: {sum(args)/len(args):.2f}")
+    print(f"Максимум: {max(args)}")
+    print(f"Минимум: {min(args)}")
+    print(f"Количество: {len(args)}")
+
+# 5.4 Модификация списка
+def multiply_list(lst: list, multiplier: int|float = -1) -> None:
+    """
+    Модифицирует список умножением элементов.
+    
+    :param lst: Список для изменения
+    :param multiplier: Множитель (по умолчанию -1)
+    """
+    for i in range(len(lst)):
+        lst[i] *= multiplier
+
+# 5.5 Лямбда-функция
+linear = lambda a, x, b: a * x + b
+
+# Тестирование функций
+if __name__ == "__main__":
+    # Тест 5.1
+    assert power(3, 4) == 81, "Ошибка в функции power"
+    assert power(x=3) == 8, "Ошибка в значениях по умолчанию"
+    
+    # Тест 5.2
+    assert factorial(5) == 120, "Ошибка вычисления факториала"
+    assert factorial(-2) == -1, "Не обработаны отрицательные числа"
+    assert factorial("test") == -1, "Не обработаны нечисловые данные"
+    
+    # Тест 5.3
+    print("\nТест stats(2, 4, 6, 8):")
+    stats(2, 4, 6, 8)
+    
+    # Тест 5.4
+    test_list = [1, 2, 3]
+    multiply_list(test_list, 2)
+    assert test_list == [2, 4, 6], "Ошибка умножения списка"
+    
+    # Тест 5.5
+    assert linear(2, 5, 3) == 13, "Ошибка в лямбда-функции"
+    print("\nВсе тесты пройдены успешно!")
