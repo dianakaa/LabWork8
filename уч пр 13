@@ -1,0 +1,74 @@
+Выполнить в visual studio code на Python 
+5.1 Разработать приложение, позволяющее считывать и модифицировать
+информацию в хті-файле, используя пакет хті.
+5.2 Разработать приложение, позволяющее создавать и модифицировать wav-файл, используя модуль wave.
+5.3 Разработать приложение, позволяющее считывать и модифицировать
+информацию в таблицах базы данных SQLite, используя DB API.
+
+
+
+import pyhit
+import moosetree
+
+# Загрузка HIT-файла
+root = pyhit.load('input.hit')
+
+# Поиск нужного узла по полному пути
+target_node = moosetree.find(root, lambda n: n.fullpath == '/Section/Parameter')
+
+# Модификация параметра и комментария
+if target_node:
+    target_node["value"] = 42  # Новое значение параметра
+    target_node.setComment("value", "Изменено 02.04.2025")
+    
+    # Сохранение изменений
+    pyhit.write('modified.hit', root)
+    print("Файл успешно изменён")
+else:
+    print("Узел не найден")
+
+
+
+
+import wave
+
+def process_wav(input_file, output_file):
+    with wave.open(input_file, 'rb') as wav_in:
+        params = wav_in.getparams()
+        frames = wav_in.readframes(params.nframes)
+
+    # Пример обработки: инверсия аудиоданных
+    processed = bytes([255 - byte for byte in frames])
+
+    with wave.open(output_file, 'wb') as wav_out:
+        wav_out.setparams(params)
+        wav_out.writeframes(processed)
+    print(f"Файл {output_file} создан успешно")
+
+# Использование
+process_wav('input.wav', 'output.wav')
+
+
+
+
+
+
+
+import sqlite3
+
+def update_record(db_path, table, id_column, record_id, updates):
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        
+        # Формирование SQL-запроса
+        set_clause = ", ".join([f"{k} = ?" for k in updates])
+        query = f"UPDATE {table} SET {set_clause} WHERE {id_column} = ?"
+        
+        # Безопасное выполнение с параметрами
+        cursor.execute(query, (*updates.values(), record_id))
+        conn.commit()
+    print(f"Запись {record_id} обновлена")
+
+# Пример использования
+updates = {'name': 'Новое имя', 'value': 100}
+update_record('example.db', 'data', 'id', 1, updates)
