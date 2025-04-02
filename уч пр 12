@@ -1,0 +1,164 @@
+import os
+import os.path
+
+# 5.1 Чтение файла и выполнение .ru скрипта
+def task_5_1():
+    """Выводит содержимое файла и выполняет .ru скрипт"""
+    filename = input("Введите имя файла: ")
+    
+    if not os.path.exists(filename):
+        print("Ошибка: файл не существует")
+        return
+    
+    # Выводим содержимое файла
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            content = f.read()
+            print(f"\nСодержимое файла {filename}:\n{content}")
+    except Exception as e:
+        print(f"Ошибка чтения файла: {e}")
+        return
+    
+    # Проверяем расширение .ru
+    _, ext = os.path.splitext(filename)
+    if ext.lower() == '.ru':
+        try:
+            exec(content)
+        except Exception as e:
+            print(f"Ошибка выполнения скрипта: {e}")
+
+# 5.2 Запись текста в файл
+def task_5_2():
+    """Записывает текст в файл с выбором режима"""
+    filename = input("Введите имя файла: ")
+    mode = 'w'
+    
+    if os.path.exists(filename):
+        choice = input("Файл существует. Дописать (a) или перезаписать (w)? ")
+        mode = 'a' if choice.lower() == 'a' else 'w'
+    
+    try:
+        with open(filename, mode, encoding='utf-8') as f:
+            print("Введите текст (для завершения введите 'end'):")
+            while True:
+                line = input()
+                if line == 'end':
+                    break
+                f.write(line + '\n')
+        print("Данные успешно записаны")
+    except Exception as e:
+        print(f"Ошибка записи файла: {e}")
+
+# 5.3 Управление файлом
+def task_5_3():
+    """Операции с файлом: просмотр, удаление, переименование"""
+    filename = input("Введите имя файла: ")
+    
+    if not os.path.exists(filename):
+        print("Файл не существует")
+        return
+    
+    choice = input("Выберите операцию (1-просмотр, 2-удаление, 3-переименование): ")
+    
+    if choice == '1':
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                print(f.read())
+        except Exception as e:
+            print(f"Ошибка чтения: {e}")
+            
+    elif choice == '2':
+        try:
+            os.remove(filename)
+            print("Файл удален")
+        except Exception as e:
+            print(f"Ошибка удаления: {e}")
+            
+    elif choice == '3':
+        new_name = input("Введите новое имя файла: ")
+        if os.path.exists(new_name):
+            print("Файл с таким именем уже существует")
+            return
+        try:
+            os.rename(filename, new_name)
+            print("Файл переименован")
+        except Exception as e:
+            print(f"Ошибка переименования: {e}")
+            
+    else:
+        print("Некорректный выбор")
+
+# 5.4 Удаление .txt файлов
+def task_5_4():
+    """Удаляет все .txt файлы в директории и поддиректориях"""
+    directory = input("Введите путь к директории: ")
+    
+    if not os.path.isdir(directory):
+        print("Директория не существует")
+        return
+    
+    confirm = input("Вы уверены, что хотите удалить все .txt файлы? (y/n): ")
+    if confirm.lower() != 'y':
+        return
+    
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.txt'):
+                file_path = os.path.join(root, file)
+                try:
+                    os.remove(file_path)
+                    print(f"Удален файл: {file_path}")
+                except Exception as e:
+                    print(f"Ошибка удаления {file_path}: {e}")
+
+# 5.5 Запись структуры каталога
+def task_5_5():
+    """Записывает структуру каталога с размерами файлов"""
+    directory = input("Введите путь к директории: ")
+    output_file = "directory_structure.txt"
+    
+    if not os.path.isdir(directory):
+        print("Директория не существует")
+        return
+    
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for root, dirs, files in os.walk(directory):
+                level = root.replace(directory, '').count(os.sep)
+                indent = ' ' * 4 * level
+                f.write(f"{indent}{os.path.basename(root)}/\n")
+                
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    size_kb = os.path.getsize(file_path) / 1024
+                    f.write(f"{indent}    {file} - {size_kb:.2f} KB\n")
+                    
+        print(f"Структура сохранена в файл {output_file}")
+    except Exception as e:
+        print(f"Ошибка: {e}")
+
+# Основное меню
+def main():
+    tasks = {
+        '1': task_5_1,
+        '2': task_5_2,
+        '3': task_5_3,
+        '4': task_5_4,
+        '5': task_5_5
+    }
+    
+    print("Выберите задание:")
+    print("1. Чтение файла и выполнение .ru скрипта")
+    print("2. Запись текста в файл")
+    print("3. Управление файлом")
+    print("4. Удаление .txt файлов")
+    print("5. Запись структуры каталога")
+    
+    choice = input("Введите номер задания (1-5): ")
+    if choice in tasks:
+        tasks[choice]()
+    else:
+        print("Некорректный выбор")
+
+if __name__ == "__main__":
+    main()
