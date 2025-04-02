@@ -1,0 +1,75 @@
+import re
+
+# 5.1 Разделение строки на предложения
+def split_into_sentences(text: str) -> None:
+    """
+    Разделяет строку на предложения, используя регулярное выражение.
+    
+    :param text: Исходная строка
+    """
+    sentences = re.split(r'[.!?…]', text)
+    for sentence in sentences:
+        if sentence.strip():  # Исключить пустые строки
+            print(sentence.strip())
+
+# Пример использования
+text = "Привет! Как дела? Это тестовая строка... Надеюсь, все хорошо."
+split_into_sentences(text)
+
+# 5.2 Замена слов "редиска" и "нехороший человек"
+def replace_negative_words(text: str) -> str:
+    """
+    Заменяет слова "редиска" и "нехороший человек" на "*давайте жить дружно*".
+    
+    :param text: Исходная строка
+    :return: Измененная строка
+    """
+    pattern = r'\b(редиска|нехороший(и|его|ему|им|ем)? человек(а|у|ом|ами|ах)?)\b'
+    return re.sub(pattern, '*давайте жить дружно*', text, flags=re.IGNORECASE)
+
+# Пример использования
+text = "Ты редиска! Он был нехорошим человеком."
+print(replace_negative_words(text))
+
+# 5.3 Выделение всех дат в формате дд.мм.гггг
+def extract_dates(text: str) -> list:
+    """
+    Выделяет все даты из строки в формате дд.мм.гггг.
+    
+    :param text: Исходная строка
+    :return: Список найденных дат
+    """
+    pattern = r'\b([1-9]|[0-2]\d|3[01])\.([1-9]|1[0-2])\.(\d{2}|\d{4})\b'
+    return re.findall(pattern, text)
+
+# Пример использования
+text = "Сегодня 02.04.2025, а завтра будет 03.04.25."
+dates = extract_dates(text)
+print([".".join(date) for date in dates])
+
+# 5.4 Проверка надежности пароля
+def validate_password() -> None:
+    """
+    Запрашивает ввод пароля и проверяет его надежность.
+    
+    Требования:
+        - Длина от 6 символов;
+        - Наличие цифры;
+        - Наличие строчной буквы;
+        - Наличие прописной буквы.
+    
+    Запрашивает повторный ввод до тех пор, пока пароль не будет надежным.
+    """
+    while True:
+        password = input("Введите пароль: ")
+        if (len(password) >= 6 and 
+            re.search(r'[0-9]', password) and 
+            re.search(r'[a-z]', password) and 
+            re.search(r'[A-Z]', password)):
+            print("Пароль надежный!")
+            break
+        else:
+            print("Пароль ненадежный! Попробуйте снова.")
+
+# Пример использования
+validate_password()
