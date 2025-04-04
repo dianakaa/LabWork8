@@ -1,0 +1,86 @@
+import xml.etree.ElementTree as ET
+
+# Функция для чтения XML-файла
+def read_xml(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    for child in root:
+        print(child.tag, child.text)
+
+# Функция для модификации XML-файла
+def modify_xml(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    
+    # Пример модификации: изменение текста первого элемента
+    first_child = root[0]
+    first_child.text = "Новый текст"
+    
+    tree.write(file_path)
+
+# Пример использования
+xml_file = 'example.xml'  # Укажите путь к вашему XML-файлу
+read_xml(xml_file)
+modify_xml(xml_file)
+Найти еще
+
+
+
+import wave
+import numpy as np
+
+# Функция для создания WAV-файла
+def create_wav(file_path):
+    sample_rate = 44100  # Частота дискретизации
+    duration = 5  # Длительность в секундах
+    frequency = 440  # Частота звука (Ля)
+
+    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+    audio = 0.5 * np.sin(2 * np.pi * frequency * t)
+
+    # Запись в WAV-файл
+    with wave.open(file_path, 'w') as wf:
+        wf.setnchannels(1)  # Моно
+        wf.setsampwidth(2)  # 2 байта (16 бит)
+        wf.setframerate(sample_rate)
+        wf.writeframes((audio * 32767).astype(np.int16).tobytes())
+
+# Пример использования
+wav_file = 'output.wav'  # Укажите путь к вашему WAV-файлу
+create_wav(wav_file)
+
+
+
+import sqlite3
+
+# Функция для создания и модификации базы данных SQLite
+def manage_database(db_path):
+    # Подключение к базе данных (или создание новой)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Создание таблицы
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)''')
+
+    # Вставка данных
+    cursor.execute("INSERT INTO users (name) VALUES ('Alice')")
+    cursor.execute("INSERT INTO users (name) VALUES ('Bob')")
+
+    # Чтение данных
+    cursor.execute("SELECT * FROM users")
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
+
+    # Модификация данных
+    cursor.execute("UPDATE users SET name = 'Charlie' WHERE id = 1")
+
+    # Сохранение изменений и закрытие соединения
+    conn.commit()
+    conn.close()
+
+# Пример использования
+db_file = 'example.db'  # Укажите путь к вашему файлу базы данных
+manage_database(db_file)
+
+
