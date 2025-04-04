@@ -1,0 +1,180 @@
+import socket
+from datetime import datetime
+import tkinter as tk
+import threading
+
+# 5.1 Клиент-серверное приложение
+
+def server_5_1():
+    HOST = ''
+    PORT = 50007
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(1)
+
+    while True:
+        conn, addr = s.accept()
+        print('Подключен клиент: ', addr)
+        
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            print('Получено сообщение:', data.decode('utf-8'))
+            conn.sendall(data)
+        
+        conn.close()
+
+def client_5_1():
+    HOST = 'localhost'
+    PORT = 50007
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((HOST, PORT))
+    s.sendall('Hello, world'.encode())
+    data = s.recv(1024)
+    s.close()
+    print('Сообщение сервера: ', repr(data))
+
+# 5.2 Общий чат
+
+def server_5_2():
+    HOST = ''
+    PORT = 50008
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(1)
+
+    while True:
+        conn, addr = s.accept()
+        
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            print(f"{datetime.strftime(datetime.now(), '%Y.%m.%d %H:%M:%S')} ({addr}): {data.decode('utf-8')}")
+        
+        conn.close()
+
+def client_5_2():
+    HOST = 'localhost'
+    PORT = 50008
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((HOST, PORT))
+
+    while True:
+        message = input("Введите сообщение (end для выхода): ")
+        if message.lower() == "end":
+            break
+        s.sendall(message.encode())
+
+    s.close()
+
+# 5.3 Общий чат с информированием
+
+def server_5_3():
+    HOST = ''
+    PORT = 50009
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen(1)
+
+    while True:
+        conn, addr = s.accept()
+        login = conn.recv(1024).decode('utf-8')
+        print(f"Подключился {login}")
+        
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            print(f"{datetime.strftime(datetime.now(), '%Y.%m.%d %H:%M:%S')} {data.decode('utf-8')}")
+        
+        conn.close()
+
+def client_5_3():
+    HOST = 'localhost'
+    PORT = 50009
+
+    login = input("Введите логин: ")
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((HOST, PORT))
+    s.sendall(login.encode())
+
+    while True:
+        message = input("Введите сообщение (end для выхода): ")
+        if message.lower() == "end":
+            break
+        s.sendall(f"{login}: {message}".encode())
+
+    s.close()
+
+# 5.4 Окно клиента
+
+class ClientApp:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Клиент")
+        
+        self.login_label = tk.Label(self.root, text="Логин:")
+        self.login_label.pack()
+        self.login_entry = tk.Entry(self.root)
+        self.login_entry.pack()
+        
+        self.message_label = tk.Label(self.root, text="Сообщение:")
+        self.message_label.pack()
+        self.message_entry = tk.Entry(self.root)
+        self.message_entry.pack()
+        
+        self.send_button = tk.Button(self.root, text="Отправить", command=self.send_message)
+        self.send_button.pack()
+        
+        self.login = None
+        self.s = None
+        
+        self.connect_button = tk.Button(self.root, text="Подключиться", command=self.connect)
+        self.connect_button.pack()
+        
+    def connect(self):
+        self.login = self.login_entry.get()
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.connect(('localhost', 50009))
+        self.s.sendall(self.login.encode())
+        
+    def send_message(self):
+        if self.s:
+            message = self.message_entry.get()
+            self.s.sendall(f"{self.login}: {message}".encode())
+            self.message_entry.delete(0, tk.END)
+        else:
+            print("Сначала подключитесь к серверу.")
+    
+    def run(self):
+        self.root.mainloop()
+
+# Запуск приложений
+if __name__ == "__main__":
+    import threading
+    
+    # Запуск серверов в отдельных потоках
+    server_thread_5_1 = threading.Thread(target=server_5_1)
+    server_thread_5_2 = threading.Thread(target=server_5_2)
+    server_thread_5_3 = threading.Thread(target=server_5_3)
+    
+    server_thread_5_1.start()
+    server_thread_5_2.start()
+    server_thread_5_3.start()
+    
+    # Запуск клиентов
+    client_5_1()
+    client_5_2()
+    client_5_3()
+    
+    # Запуск окна клиента
+    app = ClientApp()
+    app.run()
