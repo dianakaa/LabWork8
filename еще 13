@@ -1,0 +1,32 @@
+import sqlite3
+
+# Функция для создания и модификации базы данных SQLite
+def manage_database(db_path):
+    # Подключение к базе данных (или создание новой)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Создание таблицы
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)''')
+
+    # Вставка данных
+    cursor.execute("INSERT INTO users (name) VALUES ('Alice')")
+    cursor.execute("INSERT INTO users (name) VALUES ('Bob')")
+
+    # Чтение данных
+    cursor.execute("SELECT * FROM users")
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
+
+    # Модификация данных
+    cursor.execute("UPDATE users SET name = 'Charlie' WHERE id = 1")
+
+    # Сохранение изменений и закрытие соединения
+    conn.commit()
+    conn.close()
+
+# Пример использования
+db_file = 'example.db'  # Укажите путь к вашему файлу базы данных
+manage_database(db_file)
+Найти еще
