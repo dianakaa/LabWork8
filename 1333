@@ -1,0 +1,27 @@
+import xml.etree.ElementTree as ET
+
+# Чтение и модификация XML
+def modify_xml(file_path):
+    tree = ET.parse(file_path)  # Парсинг файла [1][2]
+    root = tree.getroot()
+    
+    # Пример изменения всех элементов <price>
+    for elem in root.iter('price'):
+        elem.text = str(float(elem.text) * 1.1)  # Увеличиваем цены на 10%
+    
+    # Сохранение изменений
+    tree.write(file_path, encoding='utf-8', xml_declaration=True)
+
+# Создание нового XML
+def create_xml():
+    root = ET.Element("catalog")
+    book = ET.SubElement(root, "book", id="1")
+    ET.SubElement(book, "title").text = "Python Basics"
+    ET.SubElement(book, "price").text = "29.99"
+    
+    tree = ET.ElementTree(root)
+    tree.write("new_catalog.xml", encoding='utf-8')
+
+# Использование
+create_xml()
+modify_xml("new_catalog.xml")
