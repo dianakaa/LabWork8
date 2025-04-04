@@ -1,0 +1,95 @@
+import tkinter as tk
+from tkinter import filedialog
+
+
+# 5.1 Окно с многострочным полем ввода и кнопкой "Сохранить"
+def create_save_app():
+    def save_to_file():
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if file_path:
+            with open(file_path, 'w') as file:
+                file.write(text_widget.get("1.0", tk.END))
+
+    def close_app(event=None):
+        root.destroy()
+
+    root = tk.Tk()
+    root.title("Сохранение текста")
+    root.geometry("400x300")
+
+    text_widget = tk.Text(root, wrap=tk.WORD)
+    text_widget.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+    save_button = tk.Button(root, text="Сохранить", command=save_to_file)
+    save_button.pack(pady=10)
+
+    root.bind("<Control-s>", lambda event: save_to_file())
+    root.bind("<Escape>", close_app)
+
+    root.mainloop()
+
+
+# 5.2 Окно с тремя полями ввода и выводом активного поля
+def create_active_field_app():
+    def left_click(event):
+        label.config(text=f"Активное поле: {event.widget.get()}")
+
+    def right_click(event):
+        print(f"Активное поле: {event.widget.get()}")
+
+    root = tk.Tk()
+    root.title("Активное поле")
+    root.geometry("300x200")
+
+    label = tk.Label(root, text="Активное поле:")
+    label.pack(pady=10)
+
+    for i in range(3):
+        entry = tk.Entry(root)
+        entry.pack(pady=5)
+        entry.bind("<Button-1>", left_click)
+        entry.bind("<Button-3>", right_click)
+
+    root.mainloop()
+
+
+# 5.3 Окно с отображением координат мыши
+def create_mouse_coordinates_app():
+    def update_coordinates(event):
+        label.config(text=f"Координаты: x={event.x}, y={event.y}")
+
+    root = tk.Tk()
+    root.title("Координаты мыши")
+    root.geometry("400x300")
+
+    label = tk.Label(root, text="Координаты мыши:")
+    label.pack(pady=20)
+
+    root.bind("<Motion>", update_coordinates)
+
+    root.mainloop()
+
+
+# 5.4 Окно с отображением нажатых клавиш
+def create_key_press_app():
+    def key_press(event):
+        label.config(text=f"Последняя клавиша: {event.char}")
+
+    root = tk.Tk()
+    root.title("Нажатые клавиши")
+    root.geometry("400x300")
+
+    label = tk.Label(root, text="Нажатые клавиши:")
+    label.pack(pady=20)
+
+    root.bind("<Key>", key_press)
+
+    root.mainloop()
+
+
+# Запуск всех приложений по очереди
+if __name__ == "__main__":
+    create_save_app()          # 5.1 Сохранение текста
+    create_active_field_app()  # 5.2 Активное поле
+    create_mouse_coordinates_app()  # 5.3 Координаты мыши
+    create_key_press_app()     # 5.4 Нажатые клавиши
