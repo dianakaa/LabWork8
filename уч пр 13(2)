@@ -1,0 +1,70 @@
+import py4xml
+
+# Чтение XML-файла
+with open("data.xml", "r") as f:
+    xml_data = py4xml.read_xml(f)
+    print("Корневой элемент:", xml_data.root_element)  # [1]
+    print("Список элементов:", xml_data.element_stack)  # [1]
+    print("Словарь данных:", xml_data.main_dict)  # [1]
+
+# Модификация данных (пример изменения значения)
+xml_data.main_dict["element1"]["sub_element1"] = "новое_значение"
+
+# Запись изменений в новый файл (требуется реализация)
+# Для записи можно использовать стандартный модуль xml.etree.ElementTree
+
+
+
+
+import wave
+import struct
+import math
+
+# Создание WAV-файла
+def generate_sine_wave():
+    sample_rate = 44100
+    duration = 3  # секунды
+    frequency = 440  # Гц
+    samples = (math.sin(2 * math.pi * frequency * x / sample_rate) 
+               for x in range(int(sample_rate * duration)))
+    
+    with wave.open("output.wav", "w") as wav_file:
+        wav_file.setnchannels(1)  # моно
+        wav_file.setsampwidth(2)  # 16 бит
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(b"".join(
+            struct.pack("<h", int(sample * 32767)) for sample in samples
+        ))  # [2][3]
+
+# Модификация параметров (пример изменения частоты)
+generate_sine_wave(frequency=880)  # Генерация с удвоенной частотой
+
+
+
+
+import sqlite3
+
+# Подключение к базе данных
+with sqlite3.connect("database.db") as conn:
+    cursor = conn.cursor()
+    
+    # Создание таблицы
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            age INTEGER
+        )
+    """)  # [4][5]
+    
+    # Вставка данных
+    cursor.execute("INSERT INTO users (name, age) VALUES (?, ?)", ("Alice", 30))  # [4]
+    
+    # Чтение данных
+    cursor.execute("SELECT * FROM users")
+    print("Данные:", cursor.fetchall())  # [5]
+    
+    # Модификация данных
+    cursor.execute("UPDATE users SET age = ? WHERE name = ?", (31, "Alice"))  # [4]
+    
+    conn.commit()  # Сохранение изменений
