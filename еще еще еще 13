@@ -1,0 +1,105 @@
+import xml.etree.ElementTree as ET
+import wave
+import struct
+import math
+import sqlite3
+
+# 5.1 Работа с XML-файлами
+def create_xml():
+    root = ET.Element("catalog")
+    book = ET.SubElement(root, "book", id="1")
+    ET.SubElement(book, "title").text = "Python Basics"
+    ET.SubElement(book, "price").text = "29.99"
+    
+    tree = ET.ElementTree(root)
+    tree.write("new_catalog.xml", encoding='utf-8')
+
+def modify_xml(file_path):
+    tree = ET.parse(file_path)  
+    root = tree.getroot()
+    
+    for elem in root.iter('price'):
+        elem.text = str(float(elem.text) * 1.1)  
+    
+    tree.write(file_path, encoding='utf-8', xml_declaration=True)
+
+# 5.2 Работа с WAV-файлами
+def create_wav():
+    sample_rate = 44100
+    duration = 3  
+    freq = 440  
+    
+    samples = (math.sin(2 * math.pi * freq * i / sample_rate) 
+               for i in range(int(sample_rate * duration)))
+    
+    with wave.open("sound.wav", "w") as wav_file:
+        wav_file.setnchannels(1)    
+        wav_file.setsampwidth(2)    
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(b"".join(
+            struct.pack("<h", int(sample * 32767)) for sample in samples
+        ))
+
+def modify_wav():
+    with wave.open("sound.wav", "rb") as wav_in:
+        params = wav_in.getparams()
+        frames = wav_in.readframes(params.nframes)
+    
+    modified = (struct.unpack("<h", frame)[0] * 2 for frame in 
+               (frames[i:i+2] for i in range(0, len(frames), 2)))
+    
+    with wave.open("modified.wav", "w") as wav_out:
+        wav_out.setparams(params)
+        wav_out.writeframes(b"".join(
+            struct.pack("<h", sample) for sample in modified
+        ))
+
+# 5.3 Работа с SQLite
+class DBManager:
+    def __init__(self, db_name):
+        self.conn = sqlite3.connect(db_name)
+        self.cursor = self.conn.cursor()
+    
+    def create_table(self):
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                price REAL CHECK(price > 0)
+            )
+        """)  
+        self.conn.commit()
+    
+    def insert_data(self, name, price):
+        self.cursor.execute(
+            "INSERT INTO products (name, price) VALUES (?, ?)", 
+            (name, price)
+        )
+        self.conn.commit()
+    
+    def update_price(self, product_id, new_price):
+        self.cursor.execute(
+            "UPDATE products SET price = ? WHERE id = ?",
+            (new_price, product_id)
+        )
+        self.conn.commit()
+    
+    def get_data(self):
+        return self.cursor.execute("SELECT * FROM products").fetchall()
+    
+    def __del__(self):
+        self.conn.close()
+
+# Использование
+if __name__ == "__main__":
+    create_xml()
+    modify_xml("new_catalog.xml")
+    
+    create_wav()
+    modify_wav()
+    
+    db = DBManager("store.db")
+    db.create_table()
+    db.insert_data("Laptop", 999.99)
+    db.update_price(1, 1099.99)
+    print(db.get_data())  
