@@ -1,0 +1,134 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# 5.1 Форма авторизации
+def create_login_form():
+    login_root = tk.Tk()
+    login_root.title("Авторизация")
+    login_root.geometry("200x300")
+    
+    tk.Label(login_root, text="Логин:").pack(pady=5)
+    login_entry = tk.Entry(login_root)
+    login_entry.pack(pady=5)
+    
+    tk.Label(login_root, text="Пароль:").pack(pady=5)
+    password_entry = tk.Entry(login_root, show="*")
+    password_entry.pack(pady=5)
+    
+    remember_var = tk.BooleanVar()
+    tk.Checkbutton(login_root, text="Запомнить пароль", variable=remember_var).pack(pady=5)
+    
+    def auth():
+        print(f"Логин: {login_entry.get()}")
+        print(f"Пароль: {password_entry.get()}")
+        print(f"Запомнить: {remember_var.get()}")
+    
+    tk.Button(login_root, text="Авторизоваться", command=auth).pack(pady=20)
+    
+    login_root.mainloop()
+
+# 5.2 Форма регистрации
+def create_registration_form():
+    registration_root = tk.Tk()
+    registration_root.title("Регистрация")
+    registration_root.configure(bg="#f0f0f0")
+    
+    main_frame = tk.Frame(registration_root, bg="#f0f0f0")
+    main_frame.pack(padx=20, pady=20)
+    
+    tk.Label(main_frame, text="Логин:", bg="#f0f0f0").grid(row=0, column=0, sticky="w")
+    login_entry = tk.Entry(main_frame)
+    login_entry.grid(row=0, column=1, pady=5)
+    
+    tk.Label(main_frame, text="Пароль:", bg="#f0f0f0").grid(row=1, column=0, sticky="w")
+    password_entry = tk.Entry(main_frame, show="*")
+    password_entry.grid(row=1, column=1, pady=5)
+    
+    tk.Label(main_frame, text="О себе:", bg="#f0f0f0").grid(row=2, column=0, sticky="nw")
+    about_text = tk.Text(main_frame, height=4, width=20)
+    about_text.grid(row=2, column=1, pady=5)
+    
+    gender_var = tk.StringVar()
+    tk.Label(main_frame, text="Пол:", bg="#f0f0f0").grid(row=3, column=0, sticky="w")
+    tk.Radiobutton(main_frame, text="Мужской", variable=gender_var, value="male", bg="#f0f0f0").grid(row=3, column=1, sticky="w")
+    tk.Radiobutton(main_frame, text="Женский", variable=gender_var, value="female", bg="#f0f0f0").grid(row=4, column=1, sticky="w")
+    
+    continents = ["Европа", "Азия", "Африка", "Америка", "Австралия"]
+    tk.Label(main_frame, text="Материк:", bg="#f0f0f0").grid(row=5, column=0, sticky="w")
+    continent_box = ttk.Combobox(main_frame, values=continents)
+    continent_box.grid(row=5, column=1, pady=5)
+    
+    def register():
+        print(f"Логин: {login_entry.get()}")
+        print(f"Пароль: {password_entry.get()}")
+        print(f"О себе: {about_text.get('1.0', tk.END)}")
+        print(f"Пол: {gender_var.get()}")
+        print(f"Материк: {continent_box.get()}")
+    
+    tk.Button(registration_root, text="Зарегистрироваться", command=register).pack(pady=10)
+    
+    registration_root.mainloop()
+
+# 5.3 Связь виджетов с переменными
+def create_var_binding_form():
+    var_binding_root = tk.Tk()
+    
+    entry_var = tk.StringVar()
+    check_var = tk.BooleanVar()
+    radio_var = tk.IntVar(value=1)
+    
+    tk.Entry(var_binding_root, textvariable=entry_var).pack(pady=5)
+    tk.Checkbutton(var_binding_root, text="Check me", variable=check_var).pack(pady=5)
+    tk.Radiobutton(var_binding_root, text="Option 1", variable=radio_var, value=1).pack()
+    tk.Radiobutton(var_binding_root, text="Option 2", variable=radio_var, value=2).pack()
+    
+    label = tk.Label(var_binding_root)
+    label.pack(pady=10)
+    
+    def update_label():
+        values = [
+            entry_var.get(),
+            str(check_var.get()),
+            str(radio_var.get())
+        ]
+        label.config(text=", ".join(values))
+    
+    entry_var.trace_add("write", lambda *args: update_label())
+    check_var.trace_add("write", lambda *args: update_label())
+    radio_var.trace_add("write", lambda *args: update_label())
+    
+    var_binding_root.mainloop()
+
+# 5.4 Приложение с меню
+def create_menu_app():
+    menu_root = tk.Tk()
+    menu_root.title("Меню приложения")
+    
+    menubar = tk.Menu(menu_root)
+    
+    color_menu = tk.Menu(menubar, tearoff=0)
+    color_menu.add_command(label="Red", accelerator="Ctrl+R", command=lambda: menu_root.config(bg="red"))
+    color_menu.add_command(label="Green", accelerator="Ctrl+G", command=lambda: menu_root.config(bg="green"))
+    color_menu.add_command(label="Blue", accelerator="Ctrl+B", command=lambda: menu_root.config(bg="blue"))
+    
+    size_menu = tk.Menu(menubar, tearoff=0)
+    size_menu.add_command(label="500x500", command=lambda: menu_root.geometry("500x500"))
+    size_menu.add_command(label="700x400", command=lambda: menu_root.geometry("700x400"))
+    
+    menubar.add_cascade(label="Color", menu=color_menu)
+    menubar.add_cascade(label="Size", menu=size_menu)
+    
+    menu_root.config(menu=menubar)
+    
+    menu_root.bind("<Control-r>", lambda e: menu_root.config(bg="red"))
+    menu_root.bind("<Control-g>", lambda e: menu_root.config(bg="green"))
+    menu_root.bind("<Control-b>", lambda e: menu_root.config(bg="blue"))
+    
+    menu_root.mainloop()
+
+# Запуск приложений
+if __name__ == "__main__":
+    create_login_form()
+    create_registration_form()
+    create_var_binding_form()
+    create_menu_app()
