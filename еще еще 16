@@ -1,0 +1,172 @@
+import socket
+
+HOST = ''
+PORT = 50007
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((HOST, PORT))
+s.listen(1)
+print(f"Сервер слушает порт {PORT}...")
+
+conn, addr = s.accept()
+print('Подключен клиент:', addr)
+
+while True:
+    data = conn.recv(1024)
+    if not data:
+        break
+    print('Получено сообщение:', data.decode('utf-8'))
+    conn.sendall(data)
+
+conn.close()
+
+
+
+import socket
+
+HOST = 'localhost'
+PORT = 50007
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+s.sendall('Hello, world'.encode())
+
+data = s.recv(1024)
+s.close()
+print('Сообщение сервера:', repr(data))
+
+
+
+
+import socket
+
+HOST = 'localhost'
+PORT = 50007
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+
+while True:
+    message = input("Введите сообщение (end для выхода): ")
+    if message == 'end':
+        break
+    s.sendall(message.encode())
+
+s.close()
+
+
+
+import socket
+from datetime import datetime
+
+HOST = ''
+PORT = 50007
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((HOST, PORT))
+s.listen(1)
+print(f"Сервер слушает порт {PORT}...")
+
+while True:
+    conn, addr = s.accept()
+    while True:
+        data = conn.recv(1024)
+        if not data:
+            break
+        timestamp = datetime.now().strftime("%Y.%m.%d %H:%M:%S")
+        print(f"{timestamp} ({addr[0]}): {data.decode('utf-8')}")
+    conn.close()
+
+
+
+
+
+import socket
+
+HOST = 'localhost'
+PORT = 50007
+
+login = input("Введите логин: ")
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+s.sendall(login.encode())  # Отправка логина при подключении
+
+while True:
+    message = input("Введите сообщение (end для выхода): ")
+    if message == 'end':
+        break
+    s.sendall(f"{login}: {message}".encode())
+
+s.close()
+
+
+
+
+
+import socket
+from datetime import datetime
+
+HOST = ''
+PORT = 50007
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((HOST, PORT))
+s.listen(1)
+print(f"Сервер слушает порт {PORT}...")
+
+while True:
+    conn, addr = s.accept()
+    login = conn.recv(1024).decode('utf-8')  # Получение логина
+    print(f"Подключился: {login} ({addr[0]})")
+    
+    while True:
+        data = conn.recv(1024)
+        if not data:
+            break
+        timestamp = datetime.now().strftime("%Y.%m.%d %H:%M:%S")
+        print(f"{timestamp} {login}: {data.decode('utf-8')}")
+    conn.close()
+
+
+
+
+
+import tkinter as tk
+import socket
+
+HOST = 'localhost'
+PORT = 50007
+
+def send_message():
+    login = entry_login.get()
+    message = entry_message.get()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((HOST, PORT))
+    s.sendall(f"{login}: {message}".encode())
+    s.close()
+    entry_message.delete(0, tk.END)
+
+root = tk.Tk()
+root.title("Чат-клиент")
+
+label_login = tk.Label(root, text="Логин:")
+label_login.pack()
+entry_login = tk.Entry(root)
+entry_login.pack()
+
+label_message = tk.Label(root, text="Сообщение:")
+label_message.pack()
+entry_message = tk.Entry(root)
+entry_message.pack()
+
+button_send = tk.Button(root, text="Отправить", command=send_message)
+button_send.pack()
+
+root.mainloop()
+
+
+
+
+
+
+
