@@ -117,3 +117,93 @@ namespace YourApp
 }
 
 
+
+
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+
+namespace YourApp
+{
+    public partial class MainWindow : Window
+    {
+        private readonly UserService _userService;
+
+        public MainWindow(UserService userService)
+        {
+            InitializeComponent();
+            _userService = userService;
+            UpdateUsersList();
+        }
+
+        private void CreateButton_Click(object sender, RoutedEventArgs e)
+        {
+            var user = new User
+            {
+                Login = LoginTextBox.Text,
+                Password = PasswordTextBox.Text
+            };
+            _userService.CreateUser(user);
+            UpdateUsersList();
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedUser = (User)UsersListBox.SelectedItem;
+            if (selectedUser != null)
+            {
+                selectedUser.Login = LoginTextBox.Text;
+                selectedUser.Password = PasswordTextBox.Text;
+                _userService.UpdateUser(selectedUser);
+                UpdateUsersList();
+            }
+        }
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedUser = (User)UsersListBox.SelectedItem;
+            if (selectedUser != null)
+            {
+                _userService.DeleteUser(selectedUser.Id);
+                UpdateUsersList();
+            }
+        }
+
+        private void UpdateUsersList()
+        {
+            var users = _userService.GetAllUsers();
+            UsersListBox.ItemsSource = users;
+        }
+    }
+}
+
+
+
+
+
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+
+namespace YourApp
+{
+    public class App : Application
+    {
+        public override void Initialize()
+        {
+            AvaloniaXamlLoader.Load(this);
+        }
+
+        public override void OnFrameworkInitializationCompleted()
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var serviceProvider = (IServiceProvider)desktop;
+                var userService = serviceProvider.GetService<UserService>();
+                desktop.MainWindow = new MainWindow(userService);
+            }
+
+            base.OnFrameworkInitializationCompleted();
+        }
+    }
+}
