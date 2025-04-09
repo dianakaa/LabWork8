@@ -1,3 +1,66 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+
+namespace AvaloniaApp
+{
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = new MainWindowViewModel(new UserService(new AppDbContext()));
+        }
+
+        private async void CreateButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ((MainWindowViewModel)DataContext).AddUser();
+        }
+
+        private async void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            var user = (User)button.DataContext;
+            ((MainWindowViewModel)DataContext).Login = user.Login;
+            ((MainWindowViewModel)DataContext).Password = user.Password;
+        }
+
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            var user = (User)button.DataContext;
+            await ((MainWindowViewModel)DataContext).DeleteUser(user);
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            var viewModel = (MainWindowViewModel)DataContext;
+            var user = viewModel.Users.FirstOrDefault(u => u.Login == viewModel.Login && u.Password == viewModel.Password);
+            if (user != null)
+            {
+                user.Login = viewModel.Login;
+                user.Password = viewModel.Password;
+                await viewModel.UpdateUser(user);
+            }
+            else
+            {
+                // Если пользователь не найден, создайте нового
+                var newUser = new User { Login = viewModel.Login, Password = viewModel.Password };
+                await viewModel.AddUser();
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 public class UserService
 {
     private readonly AppDbContext _context;
