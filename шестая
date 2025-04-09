@@ -34,3 +34,86 @@ public class UserService
         _context.SaveChanges();
     }
 }
+
+
+
+
+
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace YourApp
+{
+    public class Program
+    {
+        public static AppBuilder BuildAvaloniaApp()
+            => new AppBuilder().Setup<App>();
+
+        public static void Main(string[] args) => BuildAvaloniaApp()
+            .Start<App>(args);
+
+        public static void OnFrameworkInitializationCompleted()
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                using (var context = new AppDbContext())
+                {
+                    context.Database.EnsureCreated();
+                }
+
+                desktop.MainWindow = new MainWindow
+                {
+                    DataContext = new MainWindowViewModel(),
+                };
+            }
+        }
+    }
+}
+
+
+
+
+
+
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace YourApp
+{
+    public class Program
+    {
+        public static AppBuilder BuildAvaloniaApp()
+            => new AppBuilder().Setup<App>();
+
+        public static void Main(string[] args)
+        {
+            var builder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.AddDbContext<AppDbContext>(options =>
+                        options.UseSqlite("Data Source=app.db"));
+                    services.AddTransient<UserService>();
+                })
+                .Build();
+
+            using (var scope = builder.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetService<AppDbContext>();
+                context.Database.EnsureCreated();
+            }
+
+            BuildAvaloniaApp()
+                .Start<App>(args);
+        }
+    }
+}
+
+
