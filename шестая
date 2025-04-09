@@ -207,3 +207,190 @@ namespace YourApp
         }
     }
 }
+
+
+
+
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="AvaloniaApp.MainWindow"
+        Title="AvaloniaApp"
+        Width="800" Height="450">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBox Grid.Row="0" Grid.Column="0" x:Name="LoginInput" Margin="5" PlaceholderText="Логин"/>
+        <TextBox Grid.Row="1" Grid.Column="0" x:Name="PasswordInput" Margin="5" PlaceholderText="Пароль"/>
+        <Button Grid.Row="2" Grid.Column="0" x:Name="CreateButton" Margin="5" Content="Создать" Click="CreateButton_Click"/>
+        <ListBox Grid.Row="3" Grid.Column="0" x:Name="UsersList" Margin="5" />
+    </Grid>
+</Window>
+
+
+
+
+
+using ReactiveUI;
+using System.Collections.ObjectModel;
+
+public class MainWindowViewModel : ViewModelBase
+{
+    private readonly UserService _userService;
+
+    public MainWindowViewModel(UserService userService)
+    {
+        _userService = userService;
+        Users = new ObservableCollection<User>();
+        LoadUsers();
+    }
+
+    public ObservableCollection<User> Users { get; }
+
+    private string _login;
+    public string Login
+    {
+        get => _login;
+        set => this.RaiseAndSetIfChanged(ref _login, value);
+    }
+
+    private string _password;
+    public string Password
+    {
+        get => _password;
+        set => this.RaiseAndSetIfChanged(ref _password, value);
+    }
+
+    public async Task AddUser()
+    {
+        var user = new User { Login = Login, Password = Password };
+        await _userService.AddUser(user);
+        await LoadUsers();
+        Login = string.Empty;
+        Password = string.Empty;
+    }
+
+    public async Task DeleteUser(User user)
+    {
+        await _userService.DeleteUser(user.Id);
+        await LoadUsers();
+    }
+
+    public async Task UpdateUser(User user)
+    {
+        await _userService.UpdateUser(user);
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        var users = await _userService.GetAllUsers();
+        Users.Clear();
+        foreach (var user in users)
+        {
+            Users.Add(user);
+        }
+    }
+}
+
+
+
+public MainWindow()
+{
+    InitializeComponent();
+    DataContext = new MainWindowViewModel(new UserService(new AppDbContext()));
+}
+
+
+
+
+
+private async void CreateButton_Click(object sender, RoutedEventArgs e)
+{
+    await ((MainWindowViewModel)DataContext).AddUser();
+}
+
+private async void UsersList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+{
+    if (e.AddedItems.Count > 0)
+    {
+        var user = (User)e.AddedItems[0];
+        // Добавьте логику для редактирования и удаления
+    }
+}
+
+
+
+
+
+
+
+<ListBox.ItemTemplate>
+    <DataTemplate>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding Login}" Margin="5"/>
+            <Button Content="Редактировать" Click="EditButton_Click"/>
+            <Button Content="Удалить" Click="DeleteButton_Click"/>
+        </StackPanel>
+    </DataTemplate>
+</ListBox.ItemTemplate>
+
+
+
+
+
+private async void EditButton_Click(object sender, RoutedEventArgs e)
+{
+    var button = (Button)sender;
+    var user = (User)button.DataContext;
+    // Добавьте логику для редактирования
+}
+
+private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+{
+    var button = (Button)sender;
+    var user = (User)button.DataContext;
+    await ((MainWindowViewModel)DataContext).DeleteUser(user);
+}
+
+
+
+
+
+
+
+
+// В MainWindow.xaml добавьте кнопку "Сохранить"
+<Button Content="Сохранить" Click="SaveButton_Click"/>
+
+// В MainWindow.xaml.cs добавьте обработчик для кнопки "Сохранить"
+private async void SaveButton_Click(object sender, RoutedEventArgs e)
+{
+    var user = (User)UsersList.SelectedItem;
+    if (user != null)
+    {
+        user.Login = LoginInput.Text;
+        user.Password = PasswordInput.Text;
+        await ((MainWindowViewModel)DataContext).UpdateUser(user);
+    }
+}
+
+// В EditButton_Click обновите логику для редактирования
+private void EditButton_Click(object sender, RoutedEventArgs e)
+{
+    var button = (Button)sender;
+    var user = (User)button.DataContext;
+    LoginInput.Text = user.Login;
+    PasswordInput.Text = user.Password;
+}
+
+
+
