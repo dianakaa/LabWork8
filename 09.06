@@ -50,7 +50,140 @@ class Program
             await stream.WriteAsync(data, 0, data.Length);
             Console.WriteLine($"Отправлено: {message}");
             await Task.Delay(5000); // Пауза 5 секунд
+
+
+
+
+
+
         }
     }
 }
+
+
+
+
+using System;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
+
+class ConsoleClient
+{
+    static async Task Main()
+    {
+        Console.Write("Введите имя пользователя: ");
+        string userName = Console.ReadLine();
+
+        using TcpClient client = new TcpClient();
+        await client.ConnectAsync("127.0.0.1", 5000); // IP и порт сервера
+
+        using NetworkStream stream = client.GetStream();
+
+        // Отправляем имя пользователя серверу
+        byte[] nameData = Encoding.UTF8.GetBytes(userName + "\n");
+        await stream.WriteAsync(nameData, 0, nameData.Length);
+
+        Console.WriteLine("Подключено к серверу. Введите сообщения (для выхода введите 'exit'):");
+
+        while (true)
+        {
+            string message = Console.ReadLine();
+            if (message?.ToLower() == "exit")
+                break;
+
+            string fullMessage = message + "\n";
+            byte[] messageData = Encoding.UTF8.GetBytes(fullMessage);
+            await stream.WriteAsync(messageData, 0, messageData.Length);
+        }
+    }
+}
+
+
+
+
+using System;
+using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
+
+class ConsoleServer
+{
+    private static TcpListener listener;
+    private static ConcurrentDictionary<TcpClient, string> clients = new();
+
+    static async Task Main()
+    {
+        listener = new TcpListener(IPAddress.Any, 5000);
+        listener.Start();
+        Console.WriteLine("Сервер запущен. Ожидание подключений...");
+
+        while (true)
+        {
+            TcpClient client = await listener.AcceptTcpClientAsync();
+            _ = HandleClientAsync(client); // Обработка клиента в отдельном таске
+        }
+    }
+
+    private static async Task HandleClientAsync(TcpClient client)
+    {
+        string userName = "";
+        try
+        {
+            using NetworkStream stream = client.GetStream();
+            byte[] buffer = new byte[1024];
+
+            // Читаем имя пользователя (до первой новой строки)
+            int bytesRead = await ReadLineAsync(stream, buffer);
+            userName = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+            clients.TryAdd(client, userName);
+            Console.WriteLine($"Подключился пользователь: {userName}");
+
+            // Читаем сообщения от клиента
+            while ((bytesRead = await ReadLineAsync(stream, buffer)) > 0)
+            {
+                string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+                string timestamp = DateTime.Now.ToString("H:mm:ss dd.MM.yyyy");
+                Console.WriteLine($"{userName} ({timestamp}): {message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка с пользователем {userName}: {ex.Message}");
+        }
+        finally
+        {
+            clients.TryRemove(client, out _);
+            client.Close();
+            Console.WriteLine($"Пользователь {userName} отключился.");
+        }
+    }
+
+    // Метод для чтения строки из NetworkStream (до символа '\n')
+    private static async Task<int> ReadLineAsync(NetworkStream stream, byte[] buffer)
+    {
+        int totalBytes = 0;
+        while (true)
+        {
+            int bytesRead = await stream.ReadAsync(buffer, totalBytes, 1);
+            if (bytesRead == 0)
+                return totalBytes; // соединение закрыто
+
+            if (buffer[totalBytes] == '\n')
+                return totalBytes;
+
+            totalBytes++;
+            if (totalBytes >= buffer.Length)
+                throw new Exception("Сообщение слишком длинное");
+        }
+    }
+}
+
+
+
+
+
+
 
