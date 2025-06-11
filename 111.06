@@ -1,0 +1,245 @@
+using System;
+using System.IO;
+using System.Net.Sockets;
+
+class FileClient
+{
+    static void Main()
+    {
+        Console.Write("Введите путь к изображению для отправки: ");
+        string filePath = Console.ReadLine();
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine("Файл не найден.");
+            return;
+        }
+
+        byte[] fileBytes = File.ReadAllBytes(filePath);
+        long fileSize = fileBytes.Length;
+
+        try
+        {
+            using TcpClient client = new TcpClient("127.0.0.1", 9000);
+            using NetworkStream stream = client.GetStream();
+
+            // Отправка размера файла (8 байт)
+            byte[] sizeBytes = BitConverter.GetBytes(fileSize);
+            stream.Write(sizeBytes, 0, sizeBytes.Length);
+
+            // Отправка файла
+            stream.Write(fileBytes, 0, fileBytes.Length);
+
+            // Получение размера файла-ответа (8 байт)
+            byte[] responseSizeBytes = new byte[8];
+            int read = stream.Read(responseSizeBytes, 0, 8);
+            if (read < 8)
+            {
+                Console.WriteLine("Ошибка при получении размера файла-ответа.");
+                return;
+            }
+            long responseSize = BitConverter.ToInt64(responseSizeBytes, 0);
+
+            // Получение файла-ответа
+            byte[] responseBytes = new byte[responseSize];
+            int totalRead = 0;
+            while (totalRead < responseSize)
+            {
+                int bytesRead = stream.Read(responseBytes, totalRead, (int)(responseSize - totalRead));
+                if (bytesRead == 0) break;
+                totalRead += bytesRead;
+            }
+
+            if (totalRead != responseSize)
+            {
+                Console.WriteLine("Получен неполный файл-ответ.");
+                return;
+            }
+
+            // Сохранение файла-ответа
+            string savePath = "received_image.jpg";
+            File.WriteAllBytes(savePath, responseBytes);
+            Console.WriteLine($"Файл-ответ сохранён как {savePath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка: {ex.Message}");
+        }
+    }
+}
+
+
+
+using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+
+class ImageServer
+{
+    static void Main()
+    {
+        TcpListener listener = new TcpListener(IPAddress.Any, 9000);
+        listener.Start();
+        Console.WriteLine("Сервер запущен и ожидает подключения...");
+
+        while (true)
+        {
+            using TcpClient client = listener.AcceptTcpClient();
+            using NetworkStream stream = client.GetStream();
+
+            try
+            {
+                // Получение размера файла (8 байт)
+                byte[] sizeBytes = new byte[8];
+                int read = stream.Read(sizeBytes, 0, 8);
+                if (read < 8)
+                {
+                    Console.WriteLine("Ошибка при получении размера файла.");
+                    continue;
+                }
+                long fileSize = BitConverter.ToInt64(sizeBytes, 0);
+
+                // Получение файла
+                byte[] fileBytes = new byte[fileSize];
+                int totalRead = 0;
+                while (totalRead < fileSize)
+                {
+                    int bytesRead = stream.Read(fileBytes, totalRead, (int)(fileSize - totalRead));
+                    if (bytesRead == 0) break;
+                    totalRead += bytesRead;
+                }
+
+                if (totalRead != fileSize)
+                {
+                    Console.WriteLine("Получен неполный файл.");
+                    continue;
+                }
+
+                // Сжатие изображения в 2 раза
+                byte[] resizedBytes = ResizeImage(fileBytes);
+
+                // Отправка размера сжатого файла (8 байт)
+                byte[] responseSizeBytes = BitConverter.GetBytes((long)resizedBytes.Length);
+                stream.Write(responseSizeBytes, 0, responseSizeBytes.Length);
+
+                // Отправка сжатого изображения
+                stream.Write(resizedBytes, 0, resizedBytes.Length);
+
+                Console.WriteLine($"Обработан клиент, отправлен файл размером {resizedBytes.Length} байт.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при обработке клиента: {ex.Message}");
+            }
+        }
+    }
+
+    static byte[] ResizeImage(byte[] imageBuffer)
+    {
+        using MemoryStream inputStream = new MemoryStream(imageBuffer);
+        using Bitmap originalImage = new Bitmap(inputStream);
+
+        int newWidth = originalImage.Width / 2;
+        int newHeight = originalImage.Height / 2;
+
+        using Bitmap resizedImage = new Bitmap(newWidth, newHeight);
+        using Graphics graphics = Graphics.FromImage(resizedImage);
+        graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        graphics.DrawImage(originalImage, 0, 0, newWidth, newHeight);
+
+        using MemoryStream outputStream = new MemoryStream();
+        resizedImage.Save(outputStream, ImageFormat.Jpeg);
+        return outputStream.ToArray();
+    }
+}
+
+
+
+
+
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+using System.Timers;
+
+class BroadcastUdpClient
+{
+    private static UdpClient udpClient;
+    private static IPEndPoint broadcastEndPoint;
+    private static Random random = new Random();
+    private static string playerName = "Player1";
+    private static int posX = 0;
+    private static int posY = 0;
+
+    static void Main()
+    {
+        int port = 11000;
+        udpClient = new UdpClient(port);
+        udpClient.EnableBroadcast = true;
+        broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, port);
+
+        // Запуск асинхронного прослушивания
+        StartListening();
+
+        // Таймер для отправки сообщений каждые 2 секунды
+        Timer timer = new Timer(2000);
+        timer.Elapsed += SendBroadcast;
+        timer.AutoReset = true;
+        timer.Enabled = true;
+
+        Console.WriteLine("UDP broadcast клиент запущен. Нажмите Enter для выхода.");
+        Console.ReadLine();
+    }
+
+    private static async void StartListening()
+    {
+        while (true)
+        {
+            try
+            {
+                var result = await udpClient.ReceiveAsync();
+                string message = Encoding.UTF8.GetString(result.Buffer);
+                Console.WriteLine($"Получено от {result.RemoteEndPoint}: {message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при приёме: {ex.Message}");
+            }
+        }
+    }
+
+    private static void SendBroadcast(object sender, ElapsedEventArgs e)
+    {
+        posX = random.Next(-100, 100);
+        posY = random.Next(-100, 100);
+
+        var data = new
+        {
+            Name = playerName,
+            Time = DateTime.Now.ToString("HH:mm:ss"),
+            X = posX,
+            Y = posY
+        };
+
+        string json = JsonSerializer.Serialize(data);
+        byte[] bytes = Encoding.UTF8.GetBytes(json);
+
+        try
+        {
+            udpClient.Send(bytes, bytes.Length, broadcastEndPoint);
+            Console.WriteLine($"Отправлено: {json}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при отправке: {ex.Message}");
+        }
+    }
+}
+
+
