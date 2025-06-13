@@ -1,0 +1,182 @@
+using System;
+using System.Net.Sockets;
+using System.Text;
+
+class ConsoleClient
+{
+    static void Main()
+    {
+        Console.Write("Введите имя пользователя: ");
+        string userName = Console.ReadLine();
+
+        using TcpClient client = new TcpClient("127.0.0.1", 5000);
+        NetworkStream stream = client.GetStream();
+
+        while (true)
+        {
+            Console.Write("Введите сообщение: ");
+            string message = Console.ReadLine();
+            string fullMessage = $"{userName}: {message}";
+            byte[] data = Encoding.UTF8.GetBytes(fullMessage);
+            stream.Write(data, 0, data.Length);
+        }
+    }
+}
+
+
+
+
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+class ConsoleServer
+{
+    static void Main()
+    {
+        TcpListener listener = new TcpListener(IPAddress.Any, 5000);
+        listener.Start();
+        Console.WriteLine("Сервер запущен. Ожидание подключений...");
+
+        while (true)
+        {
+            TcpClient client = listener.AcceptTcpClient();
+            Thread thread = new Thread(HandleClient);
+            thread.Start(client);
+        }
+    }
+
+    static void HandleClient(object obj)
+    {
+        TcpClient client = (TcpClient)obj;
+        NetworkStream stream = client.GetStream();
+        byte[] buffer = new byte[1024];
+
+        while (true)
+        {
+            try
+            {
+                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                if (bytesRead == 0) break;
+
+                string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                string timestamp = DateTime.Now.ToString("HH:mm:ss dd.MM.yy");
+                Console.WriteLine($"{message} ({timestamp})");
+            }
+            catch
+            {
+                break;
+            }
+        }
+        client.Close();
+    }
+}
+
+
+
+
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+class RpsServer
+{
+    static TcpClient client1, client2;
+    static NetworkStream stream1, stream2;
+
+    static void Main()
+    {
+        TcpListener listener = new TcpListener(IPAddress.Any, 6000);
+        listener.Start();
+        Console.WriteLine("Ожидание двух игроков...");
+
+        client1 = listener.AcceptTcpClient();
+        Console.WriteLine("Игрок 1 подключился.");
+        client2 = listener.AcceptTcpClient();
+        Console.WriteLine("Игрок 2 подключился.");
+
+        stream1 = client1.GetStream();
+        stream2 = client2.GetStream();
+
+        while (true)
+        {
+            string move1 = ReadMessage(stream1);
+            string move2 = ReadMessage(stream2);
+
+            string result1, result2;
+            DetermineWinner(move1, move2, out result1, out result2);
+
+            SendMessage(stream1, $"Противник сыграл {move2}, вы {result1}");
+            SendMessage(stream2, $"Противник сыграл {move1}, вы {result2}");
+        }
+    }
+
+    static string ReadMessage(NetworkStream stream)
+    {
+        byte[] buffer = new byte[256];
+        int bytes = stream.Read(buffer, 0, buffer.Length);
+        return Encoding.UTF8.GetString(buffer, 0, bytes).Trim().ToLower();
+    }
+
+    static void SendMessage(NetworkStream stream, string message)
+    {
+        byte[] data = Encoding.UTF8.GetBytes(message);
+        stream.Write(data, 0, data.Length);
+    }
+
+    static void DetermineWinner(string move1, string move2, out string result1, out string result2)
+    {
+        if (move1 == move2)
+        {
+            result1 = "ничья";
+            result2 = "ничья";
+        }
+        else if ((move1 == "камень" && move2 == "ножницы") ||
+                 (move1 == "ножницы" && move2 == "бумага") ||
+                 (move1 == "бумага" && move2 == "камень"))
+        {
+            result1 = "победили";
+            result2 = "проиграли";
+        }
+        else
+        {
+            result1 = "проиграли";
+            result2 = "победили";
+        }
+    }
+}
+
+
+
+
+using System;
+using System.Net.Sockets;
+using System.Text;
+
+class RpsClient
+{
+    static void Main()
+    {
+        using TcpClient client = new TcpClient("127.0.0.1", 6000);
+        NetworkStream stream = client.GetStream();
+
+        while (true)
+        {
+            Console.Write("Введите ход (камень, ножницы, бумага): ");
+            string move = Console.ReadLine().ToLower();
+
+            byte[] data = Encoding.UTF8.GetBytes(move);
+            stream.Write(data, 0, data.Length);
+
+            byte[] buffer = new byte[256];
+            int bytes = stream.Read(buffer, 0, buffer.Length);
+            string response = Encoding.UTF8.GetString(buffer, 0, bytes);
+
+            Console.WriteLine(response);
+        }
+    }
+}
